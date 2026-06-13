@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package packetloss.v1;
+
+import "packetloss/v1/common.proto";
+
+option go_package = "github.com/exys/packetloss/builder/internal/pb/packetloss/v1;packetlossv1";
+
+// ============================================================================
+// These four messages are the JSON artifacts the builder writes to data/json/
+// and the only contract the Astro web layer depends on. Serialized as protojson.
+// ============================================================================
+
+// ---- countries.json ----
+message CountryList {
+  string generated_at = 1;  // RFC3339
+  repeated CountrySummary countries = 2;
+}
+
+message CountrySummary {
+  string code = 1;  // ISO country code, lower-case (matches URL segment)
+  string name = 2;
+  uint32 provider_count = 3;
+  uint32 target_count = 4;
+}
+
+// ---- <country>/overview.json : the ranking grid ----
+message Overview {
+  string country_code = 1;
+  string country_name = 2;
+  string generated_at = 3;
+  repeated TargetRef targets = 4;      // column order
+  repeated ProviderRow providers = 5;  // pre-sorted by score, best first
+}
+
+message TargetRef {
+  string id = 1;
+  string name = 2;
+  string kind = 3;  // hyperscaler | cloud | eyeball
+}
+
+message ProviderRow {
+  uint32 asn = 1;
+  string name = 2;
+  double score = 3;         // 0..10 overall (mean of cell scores)
+  Status status = 4;        // overall roll-up
+  bool covered = 5;         // false => insufficient probe coverage
+  uint32 probe_count = 6;
+  repeated Cell cells = 7;  // aligned to Overview.targets order
+}
+
+message Cell {
+  string target_id = 1;
+  Status status = 2;
+  double score = 3;
+  double rtt_p50_ms = 4;
+  double loss_pct = 5;
+  bool has_data = 6;
+}
+
+// ---- <country>/providers/<asn>.json : the provider detail page ----
+message ProviderDetail {
+  string country_code = 1;
+  uint32 asn = 2;
+  string name = 3;
+  double score = 4;
+  Status status = 5;
+  bool covered = 6;
+  uint32 probe_count = 7;
+  string generated_at = 8;
+  repeated TargetSeries targets = 9;
+}
+
+message TargetSeries {
+  string target_id = 1;
+  string target_name = 2;
+  double score = 3;
+  Status status = 4;
+  repeated TimePoint series = 5;    // small RTT+loss chart
+  repeated Measurement last30 = 6;  // drill-down (uPlot island / table)
+}
+
+// ---- <country>/targets/<id>.json : the target comparison page ----
+message TargetComparison {
+  string country_code = 1;
+  string target_id = 2;
+  string target_name = 3;
+  string kind = 4;
+  string generated_at = 5;
+  repeated ProviderSeries providers = 6;  // overlaid lines, best first
+}
+
+message ProviderSeries {
+  uint32 asn = 1;
+  string name = 2;
+  double score = 3;
+  Status status = 4;
+  repeated TimePoint series = 5;
+}

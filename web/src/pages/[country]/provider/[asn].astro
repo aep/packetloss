@@ -1,0 +1,63 @@
+---
+import Layout from '../../../components/Layout.astro';
+import Sparkline from '../../../components/Sparkline.astro';
+import { getCountries, getOverview, getProviderDetail, hasProviderDetail } from '../../../lib/data';
+import { statusClass, statusLabel } from '../../../lib/status';
+
+export function getStaticPaths() {
+  const paths: { params: { country: string; asn: string } }[] = [];
+  for (const c of getCountries().countries) {
+    for (const p of getOverview(c.code).providers) {
+      if (hasProviderDetail(c.code, p.asn)) {
+        paths.push({ params: { country: c.code, asn: String(p.asn) } });
+      }
+    }
+  }
+  return paths;
+}
+
+const { country, asn } = Astro.params;
+const d = getProviderDetail(country!, asn!);
+---
+
+<Layout title={d.name} activeCountry={country}>
+  <a class="back" href={`/${country}/`}>← {country!.toUpperCase()} overview</a>
+  <div class="detail-head">
+    <h1>{d.name} <span class="asn">AS{d.asn}</span></h1>
+    <div class={`score-badge ${statusClass(d.status)}`}>
+      {d.covered ? `${d.score.toFixed(1)} / 10` : 'no coverage'}
+    </div>
+  </div>
+  {!d.covered && (
+    <p class="notice">Insufficient RIPE Atlas probe coverage ({d.probeCount} probes) — not scored.</p>
+  )}
+  <div class="cards">
+    {d.targets.map((t) => (
+      <section class="card">
+        <header>
+          <h3>{t.targetName}</h3>
+          <span class={`pill ${statusClass(t.status)}`}>{statusLabel(t.status)}</span>
+        </header>
+        <Sparkline series={t.series} />
+        {t.last30.length > 0 && (
+          <details>
+            <summary>last {t.last30.length} measurements</summary>
+            <table class="meas">
+              <thead><tr><th>time</th><th>avg ms</th><th>loss %</th><th>probe</th></tr></thead>
+              <tbody>
+                {t.last30.map((m) => (
+                  <tr>
+                    <td>{m.ts}</td>
+                    <td>{m.rttAvgMs.toFixed(1)}</td>
+                    <td>{m.lossPct.toFixed(1)}</td>
+                    <td>{m.probeId}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        )}
+      </section>
+    ))}
+  </div>
+</Layout>

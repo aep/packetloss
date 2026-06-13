@@ -1,0 +1,53 @@
+---
+import type { Overview } from '../gen/packetloss/v1/artifacts_pb';
+import { Status } from '../gen/packetloss/v1/common_pb';
+import { statusClass, statusLabel } from '../lib/status';
+
+interface Props {
+  overview: Overview;
+  country: string;
+}
+const { overview, country } = Astro.props;
+
+// A provider has a real score only if covered AND at least one cell was scored
+// (status set). Otherwise we show "—" rather than a misleading 0.0.
+const hasScore = (status: Status, covered: boolean) => covered && status !== Status.UNSPECIFIED;
+---
+
+<table class="grid">
+  <thead>
+    <tr>
+      <th class="corner">Provider</th>
+      <th class="score-col">Score</th>
+      {overview.targets.map((t) => (
+        <th><a href={`/${country}/target/${t.id}/`}>{t.name}</a></th>
+      ))}
+    </tr>
+  </thead>
+  <tbody>
+    {overview.providers.map((p) => (
+      <tr>
+        <th class="provider">
+          <a href={`/${country}/provider/${p.asn}/`}>{p.name}</a>
+          <span class="asn">AS{p.asn}</span>
+        </th>
+        <td class="score">
+          <span class="badge">{hasScore(p.status, p.covered) ? p.score.toFixed(1) : '—'}</span>
+        </td>
+        {p.cells.map((c) => (
+          <td
+            class={`cell ${statusClass(c.status)}`}
+            title={c.hasData ? `${c.rttP50Ms.toFixed(1)} ms · ${c.lossPct.toFixed(1)}% loss` : statusLabel(c.status)}
+          >
+            {c.hasData && (
+              <>
+                <span class="cell-rtt">{c.rttP50Ms.toFixed(0)}ms</span>
+                {c.lossPct >= 1 && <span class="cell-loss"> · {c.lossPct.toFixed(0)}%</span>}
+              </>
+            )}
+          </td>
+        ))}
+      </tr>
+    ))}
+  </tbody>
+</table>

@@ -1,0 +1,41 @@
+---
+import '../styles/global.css';
+import { getCountries } from '../lib/data';
+
+interface Props {
+  title: string;
+  activeCountry?: string;
+}
+const { title, activeCountry } = Astro.props;
+const countries = getCountries().countries;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · PacketLoss</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a href="/" class="brand">packet<span>loss</span></a>
+      <nav class="countries">
+        {countries.map((c) => (
+          <a href={`/${c.code}/`} class={c.code === activeCountry ? 'active' : ''}>
+            {c.code.toUpperCase()}
+          </a>
+        ))}
+      </nav>
+    </header>
+    <main><slot /></main>
+    <footer class="site-footer">
+      <p>
+        <strong>Score</strong> averages each destination's relative rank (best per destination = 10)
+        and is reduced by the share of red destinations.
+        <strong>Cell colour</strong> is an absolute health check (RTT + loss thresholds), so red
+        means genuinely poor, not merely "not first". Measurements from RIPE Atlas.
+      </p>
+    </footer>
+  </body>
+</html>

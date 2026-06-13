@@ -1,0 +1,18 @@
+---
+import Layout from '../../components/Layout.astro';
+import Grid from '../../components/Grid.astro';
+import { getCountries, getOverview } from '../../lib/data';
+
+export function getStaticPaths() {
+  return getCountries().countries.map((c) => ({ params: { country: c.code } }));
+}
+
+const { country } = Astro.params;
+const ov = getOverview(country!);
+---
+
+<Layout title={`${ov.countryName} ranking`} activeCountry={country}>
+  <h1>{ov.countryName}</h1>
+  <p class="sub">Transit / ISP reachability to top destinations · generated {ov.generatedAt}</p>
+  <Grid overview={ov} country={country!} />
+</Layout>

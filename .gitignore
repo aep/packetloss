@@ -1,0 +1,17 @@
+# Go
+builder/bin/
+
+# Node / Astro
+web/node_modules/
+web/dist/
+web/.astro/
+
+# Secrets
+.env
+
+# Generated JSON artifacts (rebuilt each run from RIPE)
+data/json/
+
+# Misc
+.DS_Store
+*.log

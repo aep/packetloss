@@ -1,0 +1,39 @@
+# Germany. Providers seeded from bgp.tools/rankings/DE?sort=cone, curated to networks
+# with RIPE Atlas probe coverage. Targets = hyperscalers/clouds + top eyeball nets (APNIC).
+# ASNs/addresses marked "verify" are best-effort seeds — confirm during curation.
+code: de
+name: Germany
+
+providers:
+  - { asn: 3320,  name: Deutsche Telekom }      # DTAG
+  - { asn: 3209,  name: Vodafone DE }           # ex-Arcor
+  - { asn: 8881,  name: 1&1 Versatel }
+  - { asn: 8767,  name: M-net }
+  # AS33891 has zero RIPE Atlas probes anywhere. AS210793 (Altonetz GmbH) is BGP
+  # single-homed behind it (100% of v4 path obs transit AS33891, no other upstream),
+  # so its 3 live DE probes are used as proxies. Cleaner attribution than AS5405's.
+  - { asn: 33891, name: Core Backbone, probe_ids: [29203, 62096, 1007733] }
+  # AS5405 has no live DE probe of its own; AS48777 (DARC e.V.) is the cleanest topology
+  # downstream — only 3 upstreams observed, ~77% of v4 path obs transit AS5405 — so probe
+  # 1009864 is used as a best-effort proxy. Score is a transit blend, not pure-AS5405.
+  - { asn: 5405,  name: Inter.link, probe_ids: [1009864] }
+  - { asn: 8560,  name: IONOS / 1&1 }           # verify mapping
+  - { asn: 1299,  name: Arelion }               # ex-Telia Carrier; 2 native DE probes
+  - { asn: 174,   name: Cogent }                # 1 native DE probe (system-anchor)
+  # AS13237 (euNetworks/LambdaNet) has no native DE probes. AS203520 (Xantaro) is BGP
+  # single-homed behind it (100% v4 path obs, 1 left), so its probe is a clean proxy.
+  - { asn: 13237, name: euNetworks, probe_ids: [13190] }
+  # AS9002 (RETN) intentionally omitted: no native DE probes and no clean single-homed
+  # customer with a DE probe (best candidate AS200187 is at 63% share with 38 upstreams).
+
+# Targets use hostnames resolved per-probe at runtime (resolve_on_probe), so each probe
+# measures its nearest edge. Avoid pinning ultra-popular anycast IPs (8.8.8.8, 1.1.1.1):
+# they hit RIPE's per-target concurrent-measurement cap. `address: <ip>` is supported for
+# niche/own targets that need a fixed IP.
+targets:
+  - { id: google,     name: Google,    kind: hyperscaler, host: www.google.com }
+  - { id: cloudflare, name: Cloudflare, kind: hyperscaler, host: www.cloudflare.com }
+  - { id: netflix,    name: Netflix,    kind: hyperscaler, host: www.netflix.com }
+  - { id: amazon,     name: Amazon AWS, kind: cloud,       host: aws.amazon.com }
+  - { id: stackit,    name: StackIT,    kind: cloud,       host: portal.stackit.cloud }
+  - { id: syseleven,  name: SysEleven,  kind: cloud,       host: www.syseleven.de }

@@ -1,0 +1,15 @@
+# Scoring + status knobs. All tunable without code changes (see PRODUCT.md "Scoring").
+window_days: 7              # rolling window for scores + charts
+loss_weight_k: 10.0         # cost = rtt_p50_ms + loss_pct * K  (ms per 1% loss)
+min_probes: 1               # providers below this are "insufficient coverage", not scored
+
+# RIPE Atlas measurement shape
+probes_per_provider: 5
+measurement_interval_seconds: 3600   # hourly ongoing ping
+packets: 3                           # packets per ping measurement
+
+# Absolute thresholds for the green/red grid status (independent of the relative score)
+green_max_loss_pct: 2.0
+green_max_rtt_ms: 80.0
+amber_max_loss_pct: 5.0
+amber_max_rtt_ms: 150.0

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package packetloss.v1;
+
+option go_package = "github.com/exys/packetloss/builder/internal/pb/packetloss/v1;packetlossv1";
+
+// Health of a provider->target relationship, rendered as the grid cell colour.
+// Derived from absolute thresholds (see config/thresholds.yaml), NOT the relative score.
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_GREEN = 1;                  // within absolute RTT/loss thresholds
+  STATUS_AMBER = 2;                  // borderline
+  STATUS_RED = 3;                    // breaches thresholds
+  STATUS_INSUFFICIENT_COVERAGE = 4;  // not enough probes to judge
+}
+
+// One point in a downsampled time series (one per measurement window).
+message TimePoint {
+  string ts = 1;        // RFC3339
+  double rtt_ms = 2;    // window median RTT
+  double loss_pct = 3;  // window mean loss
+}
+
+// One measurement aggregate, for the "last 30 measurements" drill-down.
+message Measurement {
+  string ts = 1;  // RFC3339
+  double rtt_min_ms = 2;
+  double rtt_avg_ms = 3;
+  double rtt_max_ms = 4;
+  double loss_pct = 5;
+  uint32 probe_id = 6;  // RIPE Atlas probe id
+}

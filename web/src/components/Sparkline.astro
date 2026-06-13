@@ -1,0 +1,42 @@
+---
+// Build-time SVG sparkline: RTT (solid) + loss (dashed) over time. No client JS.
+import { line, curveMonotoneX } from 'd3-shape';
+import { scaleLinear } from 'd3-scale';
+import type { TimePoint } from '../gen/packetloss/v1/common_pb';
+
+interface Props {
+  series: TimePoint[];
+  width?: number;
+  height?: number;
+}
+const { series, width = 320, height = 88 } = Astro.props;
+const pad = 4;
+
+const x = scaleLinear()
+  .domain([0, Math.max(1, series.length - 1)])
+  .range([pad, width - pad]);
+const yRtt = scaleLinear()
+  .domain([0, Math.max(1, ...series.map((p) => p.rttMs))])
+  .range([height - pad, pad]);
+const yLoss = scaleLinear()
+  .domain([0, Math.max(1, ...series.map((p) => p.lossPct))])
+  .range([height - pad, pad]);
+
+const mk = (vals: number[], y: (n: number) => number) =>
+  line<number>()
+    .x((_, i) => x(i))
+    .y((d) => y(d))
+    .curve(curveMonotoneX)(vals) ?? '';
+
+const rttPath = mk(series.map((p) => p.rttMs), yRtt);
+const lossPath = mk(series.map((p) => p.lossPct), yLoss);
+---
+
+{series.length === 0 ? (
+  <div class="spark spark--empty">no data yet</div>
+) : (
+  <svg class="spark" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="RTT and loss over time">
+    <path d={rttPath} class="spark-rtt" fill="none" />
+    <path d={lossPath} class="spark-loss" fill="none" />
+  </svg>
+)}
