@@ -35,10 +35,10 @@ targets:
   - { id: google,     name: Google,    kind: hyperscaler, host: www.google.com }
   - { id: cloudflare, name: Cloudflare, kind: hyperscaler, host: www.cloudflare.com }
   - { id: akamai,     name: Akamai,    kind: cdn,         host: www.akamai.com }
+  - { id: fastly,     name: Fastly,    kind: cdn,         host: www.fastly.com }
   - { id: amazon,     name: Amazon, kind: cloud,       host: aws.amazon.com }
-  # www.facebook.com is over RIPE's 25-concurrent-measurement cap; connect.facebook.net
-  # is a less-contended Meta edge hostname (still AS32934).
   - { id: facebook,   name: Facebook,   kind: hyperscaler, host: connect.facebook.net }
-  - { id: microsoft,  name: Microsoft,  kind: hyperscaler, host: www.microsoft.com }
+  - { id: microsoft,  name: Microsoft,  kind: hyperscaler, host: office.microsoft.com }
+  - { id: apple,      name: Apple,      kind: hyperscaler, host: swcdn.apple.com }
   - { id: stackit,    name: StackIT,    kind: cloud,       host: portal.stackit.cloud }
   - { id: syseleven,  name: SysEleven,  kind: cloud,       host: www.syseleven.de }
