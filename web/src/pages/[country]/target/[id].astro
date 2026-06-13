@@ -1,7 +1,7 @@
 ---
 import Layout from '../../../components/Layout.astro';
 import Sparkline from '../../../components/Sparkline.astro';
-import { getCountries, getOverview, getTargetComparison, hasTargetComparison } from '../../../lib/data';
+import { getCountries, getOverview, getTargetComparison, hasTargetComparison, getYBounds } from '../../../lib/data';
 import { statusClass } from '../../../lib/status';
 
 export function getStaticPaths() {
@@ -18,6 +18,7 @@ export function getStaticPaths() {
 
 const { country, id } = Astro.params;
 const tc = getTargetComparison(country!, id!);
+const yb = getYBounds();
 ---
 
 <Layout title={`${tc.targetName} comparison`} activeCountry={country}>
@@ -31,7 +32,12 @@ const tc = getTargetComparison(country!, id!);
           <h3><a href={`/${country}/provider/${p.asn}/`}>{p.name}</a></h3>
           <span class={`pill ${statusClass(p.status)}`}>{p.score.toFixed(1)}</span>
         </header>
-        <Sparkline series={p.series} />
+        <Sparkline series={p.series} maxRtt={yb.rtt} maxLoss={yb.loss} />
+        {tc.measurementId > 0 && (
+          <a class="msm-link" href={`https://atlas.ripe.net/measurements/${tc.measurementId}/`} target="_blank" rel="noopener noreferrer">
+            data from RIPE Atlas -&gt;
+          </a>
+        )}
       </section>
     ))}
   </div>

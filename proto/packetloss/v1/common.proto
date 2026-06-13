@@ -20,13 +20,3 @@ message TimePoint {
   double rtt_ms = 2;    // window median RTT
   double loss_pct = 3;  // window mean loss
 }
-
-// One measurement aggregate, for the "last 30 measurements" drill-down.
-message Measurement {
-  string ts = 1;  // RFC3339
-  double rtt_min_ms = 2;
-  double rtt_avg_ms = 3;
-  double rtt_max_ms = 4;
-  double loss_pct = 5;
-  uint32 probe_id = 6;  // RIPE Atlas probe id
-}

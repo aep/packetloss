@@ -1,6 +1,12 @@
-# Scoring + status knobs. All tunable without code changes (see PRODUCT.md "Scoring").
+# Scoring + status knobs. All tunable without code changes.
 window_days: 7              # rolling window for scores + charts
-loss_weight_k: 10.0         # cost = rtt_p50_ms + loss_pct * K  (ms per 1% loss)
+
+# Cost model (all terms in ms): cost = rtt_p50 + loss_pct*K_loss + jitter*K_jitter.
+# Lower cost is better. Jitter is the mean consecutive RTT deviation (RFC3550-style),
+# so spiky links are penalised even when their median RTT looks good.
+loss_weight_k: 10.0         # ms-equivalent per 1% packet loss
+jitter_weight_k: 3.0        # ms-equivalent per 1 ms of mean delay variation (weighted up: instability hurts more than raw speed)
+
 min_probes: 1               # providers below this are "insufficient coverage", not scored
 
 # RIPE Atlas measurement shape
@@ -8,8 +14,16 @@ probes_per_provider: 5
 measurement_interval_seconds: 3600   # hourly ongoing ping
 packets: 3                           # packets per ping measurement
 
-# Absolute thresholds for the green/red grid status (independent of the relative score)
-green_max_loss_pct: 2.0
-green_max_rtt_ms: 80.0
-amber_max_loss_pct: 5.0
-amber_max_rtt_ms: 150.0
+# Absolute 0..10 score curve, exponential decay: score = 10*exp(-(cost-c10)/decay).
+# A perfect 10 demands a near-zero cost (~1ms RTT, no loss, no jitter); every extra ms
+# of cost decays the score smoothly, so excellent links spread across the top of the
+# scale instead of all clamping to 10.
+# Sub-5ms paths all count as perfect: latency differences that small are imperceptible,
+# so we don't hand out a higher score for them — consistency wins over raw micro-latency.
+cost_at_score_10: 5.0       # cost (ms) at/below which the score is a full 10
+score_decay_ms: 80.0        # cost increase (ms) that divides the score by e (~2.718)
+
+# Grid colour is derived from the score (not raw rtt/loss). With the curve above,
+# green>=7.0 ~ cost<=~34ms and amber>=3.0 ~ cost<=~101ms.
+green_min_score: 7.0        # >= this -> green
+amber_min_score: 3.0        # >= this -> amber, else red

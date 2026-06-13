@@ -15,14 +15,19 @@ import (
 type Thresholds struct {
 	WindowDays                int     `yaml:"window_days"`
 	LossWeightK               float64 `yaml:"loss_weight_k"`
+	JitterWeightK             float64 `yaml:"jitter_weight_k"`
 	MinProbes                 int     `yaml:"min_probes"`
 	ProbesPerProvider         int     `yaml:"probes_per_provider"`
 	MeasurementIntervalSecond int     `yaml:"measurement_interval_seconds"`
 	Packets                   int     `yaml:"packets"`
-	GreenMaxLossPct           float64 `yaml:"green_max_loss_pct"`
-	GreenMaxRTTMs             float64 `yaml:"green_max_rtt_ms"`
-	AmberMaxLossPct           float64 `yaml:"amber_max_loss_pct"`
-	AmberMaxRTTMs             float64 `yaml:"amber_max_rtt_ms"`
+	// Absolute 0..10 score curve. cost = rtt_p50 + K_loss*loss + K_jitter*jitter (all ms).
+	// Exponential decay: score = 10*exp(-(cost-CostAtScore10)/ScoreDecayMs), so a perfect
+	// 10 demands a near-zero cost and any added latency/loss/jitter falls off smoothly.
+	CostAtScore10 float64 `yaml:"cost_at_score_10"` // cost (ms) at/below which the score is a full 10
+	ScoreDecayMs  float64 `yaml:"score_decay_ms"`   // cost increase (ms) that divides the score by e
+	// Grid colour is derived from the score, not from raw rtt/loss.
+	GreenMinScore float64 `yaml:"green_min_score"` // >= this -> green
+	AmberMinScore float64 `yaml:"amber_min_score"` // >= this -> amber, else red
 }
 
 type Provider struct {

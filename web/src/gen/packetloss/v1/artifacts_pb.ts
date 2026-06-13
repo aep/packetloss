@@ -4,7 +4,7 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
-import type { Measurement, Status, TimePoint } from "./common_pb";
+import type { Status, TimePoint } from "./common_pb";
 import { file_packetloss_v1_common } from "./common_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file packetloss/v1/artifacts.proto.
  */
 export const file_packetloss_v1_artifacts: GenFile = /*@__PURE__*/
-  fileDesc("Ch1wYWNrZXRsb3NzL3YxL2FydGlmYWN0cy5wcm90bxINcGFja2V0bG9zcy52MSJVCgtDb3VudHJ5TGlzdBIUCgxnZW5lcmF0ZWRfYXQYASABKAkSMAoJY291bnRyaWVzGAIgAygLMh0ucGFja2V0bG9zcy52MS5Db3VudHJ5U3VtbWFyeSJaCg5Db3VudHJ5U3VtbWFyeRIMCgRjb2RlGAEgASgJEgwKBG5hbWUYAiABKAkSFgoOcHJvdmlkZXJfY291bnQYAyABKA0SFAoMdGFyZ2V0X2NvdW50GAQgASgNIqYBCghPdmVydmlldxIUCgxjb3VudHJ5X2NvZGUYASABKAkSFAoMY291bnRyeV9uYW1lGAIgASgJEhQKDGdlbmVyYXRlZF9hdBgDIAEoCRIpCgd0YXJnZXRzGAQgAygLMhgucGFja2V0bG9zcy52MS5UYXJnZXRSZWYSLQoJcHJvdmlkZXJzGAUgAygLMhoucGFja2V0bG9zcy52MS5Qcm92aWRlclJvdyIzCglUYXJnZXRSZWYSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIMCgRraW5kGAMgASgJIqgBCgtQcm92aWRlclJvdxILCgNhc24YASABKA0SDAoEbmFtZRgCIAEoCRINCgVzY29yZRgDIAEoARIlCgZzdGF0dXMYBCABKA4yFS5wYWNrZXRsb3NzLnYxLlN0YXR1cxIPCgdjb3ZlcmVkGAUgASgIEhMKC3Byb2JlX2NvdW50GAYgASgNEiIKBWNlbGxzGAcgAygLMhMucGFja2V0bG9zcy52MS5DZWxsIocBCgRDZWxsEhEKCXRhcmdldF9pZBgBIAEoCRIlCgZzdGF0dXMYAiABKA4yFS5wYWNrZXRsb3NzLnYxLlN0YXR1cxINCgVzY29yZRgDIAEoARISCgpydHRfcDUwX21zGAQgASgBEhAKCGxvc3NfcGN0GAUgASgBEhAKCGhhc19kYXRhGAYgASgIIuEBCg5Qcm92aWRlckRldGFpbBIUCgxjb3VudHJ5X2NvZGUYASABKAkSCwoDYXNuGAIgASgNEgwKBG5hbWUYAyABKAkSDQoFc2NvcmUYBCABKAESJQoGc3RhdHVzGAUgASgOMhUucGFja2V0bG9zcy52MS5TdGF0dXMSDwoHY292ZXJlZBgGIAEoCBITCgtwcm9iZV9jb3VudBgHIAEoDRIUCgxnZW5lcmF0ZWRfYXQYCCABKAkSLAoHdGFyZ2V0cxgJIAMoCzIbLnBhY2tldGxvc3MudjEuVGFyZ2V0U2VyaWVzIsIBCgxUYXJnZXRTZXJpZXMSEQoJdGFyZ2V0X2lkGAEgASgJEhMKC3RhcmdldF9uYW1lGAIgASgJEg0KBXNjb3JlGAMgASgBEiUKBnN0YXR1cxgEIAEoDjIVLnBhY2tldGxvc3MudjEuU3RhdHVzEigKBnNlcmllcxgFIAMoCzIYLnBhY2tldGxvc3MudjEuVGltZVBvaW50EioKBmxhc3QzMBgGIAMoCzIaLnBhY2tldGxvc3MudjEuTWVhc3VyZW1lbnQipgEKEFRhcmdldENvbXBhcmlzb24SFAoMY291bnRyeV9jb2RlGAEgASgJEhEKCXRhcmdldF9pZBgCIAEoCRITCgt0YXJnZXRfbmFtZRgDIAEoCRIMCgRraW5kGAQgASgJEhQKDGdlbmVyYXRlZF9hdBgFIAEoCRIwCglwcm92aWRlcnMYBiADKAsyHS5wYWNrZXRsb3NzLnYxLlByb3ZpZGVyU2VyaWVzIosBCg5Qcm92aWRlclNlcmllcxILCgNhc24YASABKA0SDAoEbmFtZRgCIAEoCRINCgVzY29yZRgDIAEoARIlCgZzdGF0dXMYBCABKA4yFS5wYWNrZXRsb3NzLnYxLlN0YXR1cxIoCgZzZXJpZXMYBSADKAsyGC5wYWNrZXRsb3NzLnYxLlRpbWVQb2ludEJLWklnaXRodWIuY29tL2V4eXMvcGFja2V0bG9zcy9idWlsZGVyL2ludGVybmFsL3BiL3BhY2tldGxvc3MvdjE7cGFja2V0bG9zc3YxYgZwcm90bzM", [file_packetloss_v1_common]);
+  fileDesc("Ch1wYWNrZXRsb3NzL3YxL2FydGlmYWN0cy5wcm90bxINcGFja2V0bG9zcy52MSJVCgtDb3VudHJ5TGlzdBIUCgxnZW5lcmF0ZWRfYXQYASABKAkSMAoJY291bnRyaWVzGAIgAygLMh0ucGFja2V0bG9zcy52MS5Db3VudHJ5U3VtbWFyeSJaCg5Db3VudHJ5U3VtbWFyeRIMCgRjb2RlGAEgASgJEgwKBG5hbWUYAiABKAkSFgoOcHJvdmlkZXJfY291bnQYAyABKA0SFAoMdGFyZ2V0X2NvdW50GAQgASgNIqYBCghPdmVydmlldxIUCgxjb3VudHJ5X2NvZGUYASABKAkSFAoMY291bnRyeV9uYW1lGAIgASgJEhQKDGdlbmVyYXRlZF9hdBgDIAEoCRIpCgd0YXJnZXRzGAQgAygLMhgucGFja2V0bG9zcy52MS5UYXJnZXRSZWYSLQoJcHJvdmlkZXJzGAUgAygLMhoucGFja2V0bG9zcy52MS5Qcm92aWRlclJvdyIzCglUYXJnZXRSZWYSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIMCgRraW5kGAMgASgJIqgBCgtQcm92aWRlclJvdxILCgNhc24YASABKA0SDAoEbmFtZRgCIAEoCRINCgVzY29yZRgDIAEoARIlCgZzdGF0dXMYBCABKA4yFS5wYWNrZXRsb3NzLnYxLlN0YXR1cxIPCgdjb3ZlcmVkGAUgASgIEhMKC3Byb2JlX2NvdW50GAYgASgNEiIKBWNlbGxzGAcgAygLMhMucGFja2V0bG9zcy52MS5DZWxsIpoBCgRDZWxsEhEKCXRhcmdldF9pZBgBIAEoCRIlCgZzdGF0dXMYAiABKA4yFS5wYWNrZXRsb3NzLnYxLlN0YXR1cxINCgVzY29yZRgDIAEoARISCgpydHRfcDUwX21zGAQgASgBEhAKCGxvc3NfcGN0GAUgASgBEhAKCGhhc19kYXRhGAYgASgIEhEKCWppdHRlcl9tcxgHIAEoASLhAQoOUHJvdmlkZXJEZXRhaWwSFAoMY291bnRyeV9jb2RlGAEgASgJEgsKA2FzbhgCIAEoDRIMCgRuYW1lGAMgASgJEg0KBXNjb3JlGAQgASgBEiUKBnN0YXR1cxgFIAEoDjIVLnBhY2tldGxvc3MudjEuU3RhdHVzEg8KB2NvdmVyZWQYBiABKAgSEwoLcHJvYmVfY291bnQYByABKA0SFAoMZ2VuZXJhdGVkX2F0GAggASgJEiwKB3RhcmdldHMYCSADKAsyGy5wYWNrZXRsb3NzLnYxLlRhcmdldFNlcmllcyK0AQoMVGFyZ2V0U2VyaWVzEhEKCXRhcmdldF9pZBgBIAEoCRITCgt0YXJnZXRfbmFtZRgCIAEoCRINCgVzY29yZRgDIAEoARIlCgZzdGF0dXMYBCABKA4yFS5wYWNrZXRsb3NzLnYxLlN0YXR1cxIoCgZzZXJpZXMYBSADKAsyGC5wYWNrZXRsb3NzLnYxLlRpbWVQb2ludBIWCg5tZWFzdXJlbWVudF9pZBgHIAEoDUoECAYQByK+AQoQVGFyZ2V0Q29tcGFyaXNvbhIUCgxjb3VudHJ5X2NvZGUYASABKAkSEQoJdGFyZ2V0X2lkGAIgASgJEhMKC3RhcmdldF9uYW1lGAMgASgJEgwKBGtpbmQYBCABKAkSFAoMZ2VuZXJhdGVkX2F0GAUgASgJEjAKCXByb3ZpZGVycxgGIAMoCzIdLnBhY2tldGxvc3MudjEuUHJvdmlkZXJTZXJpZXMSFgoObWVhc3VyZW1lbnRfaWQYByABKA0iiwEKDlByb3ZpZGVyU2VyaWVzEgsKA2FzbhgBIAEoDRIMCgRuYW1lGAIgASgJEg0KBXNjb3JlGAMgASgBEiUKBnN0YXR1cxgEIAEoDjIVLnBhY2tldGxvc3MudjEuU3RhdHVzEigKBnNlcmllcxgFIAMoCzIYLnBhY2tldGxvc3MudjEuVGltZVBvaW50QktaSWdpdGh1Yi5jb20vZXh5cy9wYWNrZXRsb3NzL2J1aWxkZXIvaW50ZXJuYWwvcGIvcGFja2V0bG9zcy92MTtwYWNrZXRsb3NzdjFiBnByb3RvMw", [file_packetloss_v1_common]);
 
 /**
  * ---- countries.json ----
@@ -234,6 +234,13 @@ export type Cell = Message<"packetloss.v1.Cell"> & {
    * @generated from field: bool has_data = 6;
    */
   hasData: boolean;
+
+  /**
+   * mean consecutive RTT deviation (RFC3550-style) over the window
+   *
+   * @generated from field: double jitter_ms = 7;
+   */
+  jitterMs: number;
 };
 
 /**
@@ -334,11 +341,11 @@ export type TargetSeries = Message<"packetloss.v1.TargetSeries"> & {
   series: TimePoint[];
 
   /**
-   * drill-down (uPlot island / table)
+   * RIPE Atlas measurement for this target; link to /measurements/<id>/
    *
-   * @generated from field: repeated packetloss.v1.Measurement last30 = 6;
+   * @generated from field: uint32 measurement_id = 7;
    */
-  last30: Measurement[];
+  measurementId: number;
 };
 
 /**
@@ -385,6 +392,13 @@ export type TargetComparison = Message<"packetloss.v1.TargetComparison"> & {
    * @generated from field: repeated packetloss.v1.ProviderSeries providers = 6;
    */
   providers: ProviderSeries[];
+
+  /**
+   * RIPE Atlas measurement for this target; link to /measurements/<id>/
+   *
+   * @generated from field: uint32 measurement_id = 7;
+   */
+  measurementId: number;
 };
 
 /**

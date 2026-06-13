@@ -1,25 +1,32 @@
 ---
 // Build-time SVG sparkline: RTT (solid) + loss (dashed) over time. No client JS.
 import { line, curveMonotoneX } from 'd3-shape';
-import { scaleLinear } from 'd3-scale';
+import { scaleLinear, scaleSymlog } from 'd3-scale';
 import type { TimePoint } from '../gen/packetloss/v1/common_pb';
 
 interface Props {
   series: TimePoint[];
   width?: number;
   height?: number;
+  // Shared y-axis maxima. When set, every chart uses the same scale so 0 is at the
+  // same height and equal values map to equal heights. Falls back to per-series max.
+  maxRtt?: number;
+  maxLoss?: number;
 }
-const { series, width = 320, height = 88 } = Astro.props;
+const { series, width = 320, height = 88, maxRtt, maxLoss } = Astro.props;
 const pad = 4;
 
 const x = scaleLinear()
   .domain([0, Math.max(1, series.length - 1)])
   .range([pad, width - pad]);
-const yRtt = scaleLinear()
-  .domain([0, Math.max(1, ...series.map((p) => p.rttMs))])
+// Symlog (log-like but defined at 0): keeps 0 at the baseline while compressing big
+// spikes so small RTT jitter near the typical band stays visible. Shared domain across
+// charts, so heights remain comparable.
+const yRtt = scaleSymlog()
+  .domain([0, Math.max(1, maxRtt ?? Math.max(1, ...series.map((p) => p.rttMs)))])
   .range([height - pad, pad]);
 const yLoss = scaleLinear()
-  .domain([0, Math.max(1, ...series.map((p) => p.lossPct))])
+  .domain([0, Math.max(1, maxLoss ?? Math.max(1, ...series.map((p) => p.lossPct)))])
   .range([height - pad, pad]);
 
 const mk = (vals: number[], y: (n: number) => number) =>
@@ -30,13 +37,81 @@ const mk = (vals: number[], y: (n: number) => number) =>
 
 const rttPath = mk(series.map((p) => p.rttMs), yRtt);
 const lossPath = mk(series.map((p) => p.lossPct), yLoss);
+
+// Per-point data + svg coords for the hover layer (read client-side from data-points).
+const points = series.map((p, i) => ({
+  x: +x(i).toFixed(2),
+  ry: +yRtt(p.rttMs).toFixed(2),
+  ly: +yLoss(p.lossPct).toFixed(2),
+  rtt: p.rttMs,
+  loss: p.lossPct,
+  ts: p.ts,
+}));
 ---
 
 {series.length === 0 ? (
-  <div class="spark spark--empty">no data yet</div>
+  <div class="spark spark--empty">not enough data yet</div>
 ) : (
-  <svg class="spark" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="RTT and loss over time">
+  <svg class="spark" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" data-points={JSON.stringify(points)} role="img" aria-label="RTT and loss over time">
+    <rect class="spark-hit" width={width} height={height} />
     <path d={rttPath} class="spark-rtt" fill="none" />
     <path d={lossPath} class="spark-loss" fill="none" />
+    <line class="spark-cursor" y1={pad} y2={height - pad} />
+    <circle class="spark-dot spark-dot-loss" r="2.6" />
+    <circle class="spark-dot spark-dot-rtt" r="2.6" />
   </svg>
 )}
+
+<script>
+  // Hover layer for every sparkline on the page (Astro bundles this once). Maps the
+  // mouse to the nearest sample and shows ts / RTT / loss in a shared tooltip.
+  const VB_W = 320;
+  function fmtTs(ts: string): string {
+    const d = new Date(ts);
+    return isNaN(+d) ? ts : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  function tipEl(): HTMLElement {
+    let t = document.getElementById('spark-tip');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'spark-tip';
+      t.className = 'spark-tip';
+      t.style.display = 'none';
+      document.body.appendChild(t);
+    }
+    return t;
+  }
+  type Pt = { x: number; ry: number; ly: number; rtt: number; loss: number; ts: string };
+  document.querySelectorAll<SVGSVGElement>('svg.spark[data-points]').forEach((svg) => {
+    let pts: Pt[];
+    try { pts = JSON.parse(svg.dataset.points!); } catch { return; }
+    if (!pts.length) return;
+    const cursor = svg.querySelector<SVGLineElement>('.spark-cursor')!;
+    const rttDot = svg.querySelector<SVGCircleElement>('.spark-dot-rtt')!;
+    const lossDot = svg.querySelector<SVGCircleElement>('.spark-dot-loss')!;
+    const tip = tipEl();
+    svg.addEventListener('mousemove', (e) => {
+      const r = svg.getBoundingClientRect();
+      const sx = ((e.clientX - r.left) / r.width) * VB_W;
+      let bi = 0, bd = Infinity;
+      for (let i = 0; i < pts.length; i++) {
+        const d = Math.abs(pts[i].x - sx);
+        if (d < bd) { bd = d; bi = i; }
+      }
+      const p = pts[bi];
+      cursor.setAttribute('x1', String(p.x));
+      cursor.setAttribute('x2', String(p.x));
+      rttDot.setAttribute('cx', String(p.x)); rttDot.setAttribute('cy', String(p.ry));
+      lossDot.setAttribute('cx', String(p.x)); lossDot.setAttribute('cy', String(p.ly));
+      svg.classList.add('spark--hover');
+      tip.innerHTML = `<span class="t">${fmtTs(p.ts)}</span> · ${p.rtt.toFixed(1)} ms · ${p.loss.toFixed(1)}% loss`;
+      tip.style.left = e.clientX + 'px';
+      tip.style.top = (r.top - 8) + 'px';
+      tip.style.display = 'block';
+    });
+    svg.addEventListener('mouseleave', () => {
+      svg.classList.remove('spark--hover');
+      tip.style.display = 'none';
+    });
+  });
+</script>

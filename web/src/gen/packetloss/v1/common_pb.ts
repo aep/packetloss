@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file packetloss/v1/common.proto.
  */
 export const file_packetloss_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChpwYWNrZXRsb3NzL3YxL2NvbW1vbi5wcm90bxINcGFja2V0bG9zcy52MSI5CglUaW1lUG9pbnQSCgoCdHMYASABKAkSDgoGcnR0X21zGAIgASgBEhAKCGxvc3NfcGN0GAMgASgBInkKC01lYXN1cmVtZW50EgoKAnRzGAEgASgJEhIKCnJ0dF9taW5fbXMYAiABKAESEgoKcnR0X2F2Z19tcxgDIAEoARISCgpydHRfbWF4X21zGAQgASgBEhAKCGxvc3NfcGN0GAUgASgBEhAKCHByb2JlX2lkGAYgASgNKnYKBlN0YXR1cxIWChJTVEFUVVNfVU5TUEVDSUZJRUQQABIQCgxTVEFUVVNfR1JFRU4QARIQCgxTVEFUVVNfQU1CRVIQAhIOCgpTVEFUVVNfUkVEEAMSIAocU1RBVFVTX0lOU1VGRklDSUVOVF9DT1ZFUkFHRRAEQktaSWdpdGh1Yi5jb20vZXh5cy9wYWNrZXRsb3NzL2J1aWxkZXIvaW50ZXJuYWwvcGIvcGFja2V0bG9zcy92MTtwYWNrZXRsb3NzdjFiBnByb3RvMw");
+  fileDesc("ChpwYWNrZXRsb3NzL3YxL2NvbW1vbi5wcm90bxINcGFja2V0bG9zcy52MSI5CglUaW1lUG9pbnQSCgoCdHMYASABKAkSDgoGcnR0X21zGAIgASgBEhAKCGxvc3NfcGN0GAMgASgBKnYKBlN0YXR1cxIWChJTVEFUVVNfVU5TUEVDSUZJRUQQABIQCgxTVEFUVVNfR1JFRU4QARIQCgxTVEFUVVNfQU1CRVIQAhIOCgpTVEFUVVNfUkVEEAMSIAocU1RBVFVTX0lOU1VGRklDSUVOVF9DT1ZFUkFHRRAEQktaSWdpdGh1Yi5jb20vZXh5cy9wYWNrZXRsb3NzL2J1aWxkZXIvaW50ZXJuYWwvcGIvcGFja2V0bG9zcy92MTtwYWNrZXRsb3NzdjFiBnByb3RvMw");
 
 /**
  * One point in a downsampled time series (one per measurement window).
@@ -46,54 +46,6 @@ export type TimePoint = Message<"packetloss.v1.TimePoint"> & {
  */
 export const TimePointSchema: GenMessage<TimePoint> = /*@__PURE__*/
   messageDesc(file_packetloss_v1_common, 0);
-
-/**
- * One measurement aggregate, for the "last 30 measurements" drill-down.
- *
- * @generated from message packetloss.v1.Measurement
- */
-export type Measurement = Message<"packetloss.v1.Measurement"> & {
-  /**
-   * RFC3339
-   *
-   * @generated from field: string ts = 1;
-   */
-  ts: string;
-
-  /**
-   * @generated from field: double rtt_min_ms = 2;
-   */
-  rttMinMs: number;
-
-  /**
-   * @generated from field: double rtt_avg_ms = 3;
-   */
-  rttAvgMs: number;
-
-  /**
-   * @generated from field: double rtt_max_ms = 4;
-   */
-  rttMaxMs: number;
-
-  /**
-   * @generated from field: double loss_pct = 5;
-   */
-  lossPct: number;
-
-  /**
-   * RIPE Atlas probe id
-   *
-   * @generated from field: uint32 probe_id = 6;
-   */
-  probeId: number;
-};
-
-/**
- * Describes the message packetloss.v1.Measurement.
- * Use `create(MeasurementSchema)` to create a new message.
- */
-export const MeasurementSchema: GenMessage<Measurement> = /*@__PURE__*/
-  messageDesc(file_packetloss_v1_common, 1);
 
 /**
  * Health of a provider->target relationship, rendered as the grid cell colour.

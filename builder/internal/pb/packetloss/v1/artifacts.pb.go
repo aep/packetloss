@@ -379,6 +379,7 @@ type Cell struct {
 	RttP50Ms      float64                `protobuf:"fixed64,4,opt,name=rtt_p50_ms,json=rttP50Ms,proto3" json:"rtt_p50_ms,omitempty"`
 	LossPct       float64                `protobuf:"fixed64,5,opt,name=loss_pct,json=lossPct,proto3" json:"loss_pct,omitempty"`
 	HasData       bool                   `protobuf:"varint,6,opt,name=has_data,json=hasData,proto3" json:"has_data,omitempty"`
+	JitterMs      float64                `protobuf:"fixed64,7,opt,name=jitter_ms,json=jitterMs,proto3" json:"jitter_ms,omitempty"` // mean consecutive RTT deviation (RFC3550-style) over the window
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -453,6 +454,13 @@ func (x *Cell) GetHasData() bool {
 		return x.HasData
 	}
 	return false
+}
+
+func (x *Cell) GetJitterMs() float64 {
+	if x != nil {
+		return x.JitterMs
+	}
+	return 0
 }
 
 // ---- <country>/providers/<asn>.json : the provider detail page ----
@@ -570,8 +578,8 @@ type TargetSeries struct {
 	TargetName    string                 `protobuf:"bytes,2,opt,name=target_name,json=targetName,proto3" json:"target_name,omitempty"`
 	Score         float64                `protobuf:"fixed64,3,opt,name=score,proto3" json:"score,omitempty"`
 	Status        Status                 `protobuf:"varint,4,opt,name=status,proto3,enum=packetloss.v1.Status" json:"status,omitempty"`
-	Series        []*TimePoint           `protobuf:"bytes,5,rep,name=series,proto3" json:"series,omitempty"` // small RTT+loss chart
-	Last30        []*Measurement         `protobuf:"bytes,6,rep,name=last30,proto3" json:"last30,omitempty"` // drill-down (uPlot island / table)
+	Series        []*TimePoint           `protobuf:"bytes,5,rep,name=series,proto3" json:"series,omitempty"`                                     // small RTT+loss chart
+	MeasurementId uint32                 `protobuf:"varint,7,opt,name=measurement_id,json=measurementId,proto3" json:"measurement_id,omitempty"` // RIPE Atlas measurement for this target; link to /measurements/<id>/
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -641,11 +649,11 @@ func (x *TargetSeries) GetSeries() []*TimePoint {
 	return nil
 }
 
-func (x *TargetSeries) GetLast30() []*Measurement {
+func (x *TargetSeries) GetMeasurementId() uint32 {
 	if x != nil {
-		return x.Last30
+		return x.MeasurementId
 	}
-	return nil
+	return 0
 }
 
 // ---- <country>/targets/<id>.json : the target comparison page ----
@@ -656,7 +664,8 @@ type TargetComparison struct {
 	TargetName    string                 `protobuf:"bytes,3,opt,name=target_name,json=targetName,proto3" json:"target_name,omitempty"`
 	Kind          string                 `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
 	GeneratedAt   string                 `protobuf:"bytes,5,opt,name=generated_at,json=generatedAt,proto3" json:"generated_at,omitempty"`
-	Providers     []*ProviderSeries      `protobuf:"bytes,6,rep,name=providers,proto3" json:"providers,omitempty"` // overlaid lines, best first
+	Providers     []*ProviderSeries      `protobuf:"bytes,6,rep,name=providers,proto3" json:"providers,omitempty"`                               // overlaid lines, best first
+	MeasurementId uint32                 `protobuf:"varint,7,opt,name=measurement_id,json=measurementId,proto3" json:"measurement_id,omitempty"` // RIPE Atlas measurement for this target; link to /measurements/<id>/
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -731,6 +740,13 @@ func (x *TargetComparison) GetProviders() []*ProviderSeries {
 		return x.Providers
 	}
 	return nil
+}
+
+func (x *TargetComparison) GetMeasurementId() uint32 {
+	if x != nil {
+		return x.MeasurementId
+	}
+	return 0
 }
 
 type ProviderSeries struct {
@@ -840,7 +856,7 @@ const file_packetloss_v1_artifacts_proto_rawDesc = "" +
 	"\acovered\x18\x05 \x01(\bR\acovered\x12\x1f\n" +
 	"\vprobe_count\x18\x06 \x01(\rR\n" +
 	"probeCount\x12)\n" +
-	"\x05cells\x18\a \x03(\v2\x13.packetloss.v1.CellR\x05cells\"\xbc\x01\n" +
+	"\x05cells\x18\a \x03(\v2\x13.packetloss.v1.CellR\x05cells\"\xd9\x01\n" +
 	"\x04Cell\x12\x1b\n" +
 	"\ttarget_id\x18\x01 \x01(\tR\btargetId\x12-\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x15.packetloss.v1.StatusR\x06status\x12\x14\n" +
@@ -848,7 +864,8 @@ const file_packetloss_v1_artifacts_proto_rawDesc = "" +
 	"\n" +
 	"rtt_p50_ms\x18\x04 \x01(\x01R\brttP50Ms\x12\x19\n" +
 	"\bloss_pct\x18\x05 \x01(\x01R\alossPct\x12\x19\n" +
-	"\bhas_data\x18\x06 \x01(\bR\ahasData\"\xb3\x02\n" +
+	"\bhas_data\x18\x06 \x01(\bR\ahasData\x12\x1b\n" +
+	"\tjitter_ms\x18\a \x01(\x01R\bjitterMs\"\xb3\x02\n" +
 	"\x0eProviderDetail\x12!\n" +
 	"\fcountry_code\x18\x01 \x01(\tR\vcountryCode\x12\x10\n" +
 	"\x03asn\x18\x02 \x01(\rR\x03asn\x12\x12\n" +
@@ -859,15 +876,15 @@ const file_packetloss_v1_artifacts_proto_rawDesc = "" +
 	"\vprobe_count\x18\a \x01(\rR\n" +
 	"probeCount\x12!\n" +
 	"\fgenerated_at\x18\b \x01(\tR\vgeneratedAt\x125\n" +
-	"\atargets\x18\t \x03(\v2\x1b.packetloss.v1.TargetSeriesR\atargets\"\xf7\x01\n" +
+	"\atargets\x18\t \x03(\v2\x1b.packetloss.v1.TargetSeriesR\atargets\"\xf0\x01\n" +
 	"\fTargetSeries\x12\x1b\n" +
 	"\ttarget_id\x18\x01 \x01(\tR\btargetId\x12\x1f\n" +
 	"\vtarget_name\x18\x02 \x01(\tR\n" +
 	"targetName\x12\x14\n" +
 	"\x05score\x18\x03 \x01(\x01R\x05score\x12-\n" +
 	"\x06status\x18\x04 \x01(\x0e2\x15.packetloss.v1.StatusR\x06status\x120\n" +
-	"\x06series\x18\x05 \x03(\v2\x18.packetloss.v1.TimePointR\x06series\x122\n" +
-	"\x06last30\x18\x06 \x03(\v2\x1a.packetloss.v1.MeasurementR\x06last30\"\xe7\x01\n" +
+	"\x06series\x18\x05 \x03(\v2\x18.packetloss.v1.TimePointR\x06series\x12%\n" +
+	"\x0emeasurement_id\x18\a \x01(\rR\rmeasurementIdJ\x04\b\x06\x10\a\"\x8e\x02\n" +
 	"\x10TargetComparison\x12!\n" +
 	"\fcountry_code\x18\x01 \x01(\tR\vcountryCode\x12\x1b\n" +
 	"\ttarget_id\x18\x02 \x01(\tR\btargetId\x12\x1f\n" +
@@ -875,7 +892,8 @@ const file_packetloss_v1_artifacts_proto_rawDesc = "" +
 	"targetName\x12\x12\n" +
 	"\x04kind\x18\x04 \x01(\tR\x04kind\x12!\n" +
 	"\fgenerated_at\x18\x05 \x01(\tR\vgeneratedAt\x12;\n" +
-	"\tproviders\x18\x06 \x03(\v2\x1d.packetloss.v1.ProviderSeriesR\tproviders\"\xad\x01\n" +
+	"\tproviders\x18\x06 \x03(\v2\x1d.packetloss.v1.ProviderSeriesR\tproviders\x12%\n" +
+	"\x0emeasurement_id\x18\a \x01(\rR\rmeasurementId\"\xad\x01\n" +
 	"\x0eProviderSeries\x12\x10\n" +
 	"\x03asn\x18\x01 \x01(\rR\x03asn\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -909,7 +927,6 @@ var file_packetloss_v1_artifacts_proto_goTypes = []any{
 	(*ProviderSeries)(nil),   // 9: packetloss.v1.ProviderSeries
 	(Status)(0),              // 10: packetloss.v1.Status
 	(*TimePoint)(nil),        // 11: packetloss.v1.TimePoint
-	(*Measurement)(nil),      // 12: packetloss.v1.Measurement
 }
 var file_packetloss_v1_artifacts_proto_depIdxs = []int32{
 	1,  // 0: packetloss.v1.CountryList.countries:type_name -> packetloss.v1.CountrySummary
@@ -922,15 +939,14 @@ var file_packetloss_v1_artifacts_proto_depIdxs = []int32{
 	7,  // 7: packetloss.v1.ProviderDetail.targets:type_name -> packetloss.v1.TargetSeries
 	10, // 8: packetloss.v1.TargetSeries.status:type_name -> packetloss.v1.Status
 	11, // 9: packetloss.v1.TargetSeries.series:type_name -> packetloss.v1.TimePoint
-	12, // 10: packetloss.v1.TargetSeries.last30:type_name -> packetloss.v1.Measurement
-	9,  // 11: packetloss.v1.TargetComparison.providers:type_name -> packetloss.v1.ProviderSeries
-	10, // 12: packetloss.v1.ProviderSeries.status:type_name -> packetloss.v1.Status
-	11, // 13: packetloss.v1.ProviderSeries.series:type_name -> packetloss.v1.TimePoint
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	9,  // 10: packetloss.v1.TargetComparison.providers:type_name -> packetloss.v1.ProviderSeries
+	10, // 11: packetloss.v1.ProviderSeries.status:type_name -> packetloss.v1.Status
+	11, // 12: packetloss.v1.ProviderSeries.series:type_name -> packetloss.v1.TimePoint
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_packetloss_v1_artifacts_proto_init() }

@@ -1,9 +1,11 @@
 // Package score turns windowed measurement history into a fully scored country
-// report: relative 0..10 scores per (provider,target), absolute green/red status,
-// downsampled chart series, and the last-30 drill-down. Pure functions, no I/O.
+// report: absolute 0..10 scores per (provider,target) from a fixed latency+loss+jitter
+// cost curve, green/red status derived from that score, and downsampled chart series.
+// Scores are peer-independent and comparable across countries. Pure functions, no I/O.
 package score
 
 import (
+	"math"
 	"slices"
 	"sort"
 	"time"
@@ -40,21 +42,13 @@ type TimePoint struct {
 	LossPct float64
 }
 
-type Measurement struct {
-	TS      time.Time
-	RTTMin  float64
-	RTTAvg  float64
-	RTTMax  float64
-	LossPct float64
-	ProbeID uint32
-}
-
 type Cell struct {
 	TargetID string
 	Status   Status
 	Score    float64
 	RTTp50   float64
 	LossPct  float64
+	Jitter   float64
 	HasData  bool
 }
 
@@ -67,7 +61,6 @@ type ProviderReport struct {
 	ProbeCount int
 	Cells      []Cell
 	Series     map[string][]TimePoint
-	Last30     map[string][]Measurement
 }
 
 type TargetRef struct{ ID, Name, Kind string }
@@ -99,8 +92,8 @@ func Compute(c config.Country, th config.Thresholds, probeCounts map[uint32]int,
 	}
 
 	type agg struct {
-		rttP50, lossPct, cost float64
-		hasData               bool
+		rttP50, lossPct, jitter, cost float64
+		hasData                       bool
 	}
 	aggs := map[ptKey]agg{}
 	for _, p := range c.Providers {
@@ -119,37 +112,10 @@ func Compute(c config.Country, th config.Thresholds, probeCounts map[uint32]int,
 			}
 			p50 := median(rtts)
 			loss := lossSum / float64(len(rs))
-			aggs[ptKey{p.ASN, t.ID}] = agg{rttP50: p50, lossPct: loss, cost: p50 + loss*th.LossWeightK, hasData: true}
+			jit := jitter(rs)
+			cost := p50 + loss*th.LossWeightK + jit*th.JitterWeightK
+			aggs[ptKey{p.ASN, t.ID}] = agg{rttP50: p50, lossPct: loss, jitter: jit, cost: cost, hasData: true}
 		}
-	}
-
-	// Per-target cost range over covered providers, for relative normalisation.
-	type mm struct{ lo, hi float64 }
-	ranges := map[string]mm{}
-	for _, t := range c.Targets {
-		first := true
-		var r mm
-		for _, p := range c.Providers {
-			if probeCounts[p.ASN] < th.MinProbes {
-				continue
-			}
-			a, ok := aggs[ptKey{p.ASN, t.ID}]
-			if !ok {
-				continue
-			}
-			if first {
-				r = mm{a.cost, a.cost}
-				first = false
-				continue
-			}
-			if a.cost < r.lo {
-				r.lo = a.cost
-			}
-			if a.cost > r.hi {
-				r.hi = a.cost
-			}
-		}
-		ranges[t.ID] = r
 	}
 
 	for _, p := range c.Providers {
@@ -159,34 +125,28 @@ func Compute(c config.Country, th config.Thresholds, probeCounts map[uint32]int,
 			ProbeCount: probeCounts[p.ASN],
 			Covered:    probeCounts[p.ASN] >= th.MinProbes,
 			Series:     map[string][]TimePoint{},
-			Last30:     map[string][]Measurement{},
 		}
 		var scoreSum float64
 		var scored, red int
-		worst := StatusGreen
 		for _, t := range c.Targets {
 			a, ok := aggs[ptKey{p.ASN, t.ID}]
-			cell := Cell{TargetID: t.ID, HasData: ok, RTTp50: a.rttP50, LossPct: a.lossPct}
+			cell := Cell{TargetID: t.ID, HasData: ok, RTTp50: a.rttP50, LossPct: a.lossPct, Jitter: a.jitter}
 			switch {
 			case !pr.Covered:
 				cell.Status = StatusInsufficientCoverage
 			case ok:
-				cell.Score = relScore(a.cost, ranges[t.ID].lo, ranges[t.ID].hi)
-				cell.Status = absStatus(a.rttP50, a.lossPct, th)
+				cell.Score = absScore(a.cost, th)
+				cell.Status = statusFromScore(cell.Score, th)
 				scoreSum += cell.Score
 				scored++
 				if cell.Status == StatusRed {
 					red++
-				}
-				if cell.Status > worst {
-					worst = cell.Status
 				}
 			default:
 				cell.Status = StatusUnspecified
 			}
 			pr.Cells = append(pr.Cells, cell)
 			pr.Series[t.ID] = series(byPT[ptKey{p.ASN, t.ID}])
-			pr.Last30[t.ID] = last30(byPT[ptKey{p.ASN, t.ID}])
 		}
 		switch {
 		case !pr.Covered:
@@ -197,7 +157,9 @@ func Compute(c config.Country, th config.Thresholds, probeCounts map[uint32]int,
 			mean := scoreSum / float64(scored)
 			reliability := float64(scored-red) / float64(scored)
 			pr.Score = round1(mean * reliability)
-			pr.Status = worst
+			// Colour the provider from its overall score, same scale as the cells,
+			// so the badge can't disagree with the number it sits next to.
+			pr.Status = statusFromScore(pr.Score, th)
 		}
 		rep.Providers = append(rep.Providers, pr)
 	}
@@ -213,12 +175,16 @@ func Compute(c config.Country, th config.Thresholds, probeCounts map[uint32]int,
 	return rep
 }
 
-// relScore maps cost to 0..10 relative to peers: best (lo) -> 10, worst (hi) -> 0.
-func relScore(cost, lo, hi float64) float64 {
-	if hi <= lo {
+// absScore maps cost to an absolute 0..10 on a fixed exponential-decay curve,
+// independent of peers: a full 10 requires cost <= CostAtScore10 (near-perfect:
+// ~1ms, no loss, no jitter), and every extra ms of cost decays the score by
+// exp(-1/ScoreDecayMs). Concave at the top so excellent paths spread out instead of
+// all pinning at 10; peer-independent and comparable across countries.
+func absScore(cost float64, th config.Thresholds) float64 {
+	if th.ScoreDecayMs <= 0 || cost <= th.CostAtScore10 {
 		return 10
 	}
-	s := 10 * (hi - cost) / (hi - lo)
+	s := 10 * math.Exp(-(cost-th.CostAtScore10)/th.ScoreDecayMs)
 	switch {
 	case s < 0:
 		s = 0
@@ -228,15 +194,48 @@ func relScore(cost, lo, hi float64) float64 {
 	return round1(s)
 }
 
-func absStatus(rtt, loss float64, th config.Thresholds) Status {
+// statusFromScore derives the green/amber/red grid colour from the absolute score.
+func statusFromScore(score float64, th config.Thresholds) Status {
 	switch {
-	case loss <= th.GreenMaxLossPct && rtt <= th.GreenMaxRTTMs:
+	case score >= th.GreenMinScore:
 		return StatusGreen
-	case loss <= th.AmberMaxLossPct && rtt <= th.AmberMaxRTTMs:
+	case score >= th.AmberMinScore:
 		return StatusAmber
 	default:
 		return StatusRed
 	}
+}
+
+// jitter is the RFC3550 / ITU-T-style packet delay variation: the mean absolute
+// difference between consecutive RTT samples in time order. A flat line scores ~0;
+// occasional spikes (up then back down) each contribute two large deltas. Only
+// valid (>0) RTTAvg samples are used.
+func jitter(rs []Result) float64 {
+	ord := slices.Clone(rs)
+	slices.SortFunc(ord, func(a, b Result) int { return a.TS.Compare(b.TS) })
+	var prev float64
+	var sum float64
+	var n int
+	have := false
+	for _, r := range ord {
+		if r.RTTAvg <= 0 {
+			continue
+		}
+		if have {
+			d := r.RTTAvg - prev
+			if d < 0 {
+				d = -d
+			}
+			sum += d
+			n++
+		}
+		prev = r.RTTAvg
+		have = true
+	}
+	if n == 0 {
+		return 0
+	}
+	return sum / float64(n)
 }
 
 func median(v []float64) float64 {
@@ -287,22 +286,6 @@ func series(rs []Result) []TimePoint {
 			RTTms:   round1(median(b.rtts)),
 			LossPct: round1(b.loss / float64(b.n)),
 		})
-	}
-	return out
-}
-
-// last30 returns the 30 most recent results, newest first.
-func last30(rs []Result) []Measurement {
-	out := make([]Measurement, 0, len(rs))
-	for _, r := range rs {
-		out = append(out, Measurement{
-			TS: r.TS, RTTMin: r.RTTMin, RTTAvg: r.RTTAvg, RTTMax: r.RTTMax,
-			LossPct: r.LossPct, ProbeID: r.ProbeID,
-		})
-	}
-	sort.Slice(out, func(i, j int) bool { return out[i].TS.After(out[j].TS) })
-	if len(out) > 30 {
-		out = out[:30]
 	}
 	return out
 }

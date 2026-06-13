@@ -1,39 +1,26 @@
 # PacketLoss
 
-Ranks internet transit/ISP networks by how well they reach the top destinations per country,
-using RIPE Atlas RTT + loss measurements. Static site. **See [PRODUCT.md](./PRODUCT.md) for the
-full design.**
-
-## Architecture
+The pipeline is four distinct steps, run in order:
 
 ```
-proto/ ──buf generate──▶ Go types (builder) + TS types (web)
-                         │
-config/*.yaml ─▶ builder (Go, stateless) ─▶ data/json/ (protojson)
-                     ▲                            │
-                RIPE Atlas (the store)        web (Astro) ─▶ dist/ (static)
+make atlas    # sync config -> RIPE Atlas measurements (ensure + reconcile probes)
+make data     # download the rolling window of results -> local cache (data/json/)
+make web      # build the static site from the cache -> web/dist
+make publish  # upload web/dist to bunny.net (bunny CLI)
 ```
 
-- **builder/** (Go) — stateless: RIPE Atlas probe coverage → ensure ongoing ping measurements →
-  fetch rolling window → score → JSON export. No local DB; RIPE retains the history.
-- **web/** (Astro) — reads the `data/json/` protojson artifacts only → static HTML + SVG charts.
-- **proto/** — the JSON contract, shared via `buf` (`protoc-gen-go` + `protobuf-es`).
-
-## Commands (`make help`)
+Plumbing (only after editing the proto contract, or on first setup):
 
 ```
-make install        # web deps (incl. protoc-gen-es, needed for codegen)
-make build          # buf generate + go build + astro build
-make build-builder  # gen + go mod tidy + compile the Go builder
-make build-web      # render the static site from data/json/
-make run             # full pipeline: RIPE collect -> score -> export -> render
-make stop-measurements  # stop all packetloss measurements on your RIPE account (reset)
-make web-dev         # Astro dev server against current data/json/
-make lint            # buf lint
-make check           # lint + compile builder
+make install  # web deps (incl. protoc-gen-es, needed for codegen)
+make gen      # buf generate (Go + TS types)
+make tidy     # buf generate + go mod tidy
+make lint     # buf lint
 ```
 
-First time: `make install`, `cp .env.example .env` and add your key, then `make run`.
+First time: `make install`, `cp .env.example .env` and fill in your keys. Then `make atlas`
+once to create the measurements — RIPE needs an interval to execute them, so RTT/loss appears
+on a later `make data && make web && make publish`.
 
 ## Data
 

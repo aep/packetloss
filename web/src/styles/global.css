@@ -51,9 +51,10 @@ h1 { font-size: 1.9rem; margin: 0 0 0.3rem; letter-spacing: -0.5px; }
 .grid th, .grid td { border: 1px solid var(--line); padding: 0.55rem 0.7rem; text-align: center; }
 .grid thead th { background: var(--panel); color: var(--muted); font-weight: 600; }
 .grid th.corner, .grid th.provider { text-align: left; }
+.grid th.provider { white-space: nowrap; }
 .grid th.provider a { color: var(--fg); font-weight: 600; }
 .grid .asn { display: block; font: 0.7rem var(--mono); color: var(--muted); }
-.cell { font: 0.78rem var(--mono); }
+.cell { font: 0.78rem var(--mono); white-space: nowrap; }
 .cell-rtt { opacity: 0.85; }
 
 .badge {
@@ -67,6 +68,7 @@ h1 { font-size: 1.9rem; margin: 0 0 0.3rem; letter-spacing: -0.5px; }
 }
 
 .cell-loss { color: var(--fg); margin-left: 0.15rem; }
+.cell-jitter { color: var(--fg); margin-left: 0.15rem; }
 
 /* status colours */
 .s-green { background: var(--green); color: #07130d; }
@@ -92,15 +94,25 @@ td.cell.s-none { background: var(--panel); }
 .card h3 { margin: 0; font-size: 1rem; }
 .pill { font: 700 0.7rem var(--mono); padding: 0.15rem 0.5rem; border-radius: 999px; }
 
-.spark { width: 100%; height: 88px; display: block; }
+.spark { width: 100%; height: 88px; display: block; cursor: crosshair; }
 .spark--empty { height: 88px; display: grid; place-items: center; color: var(--muted); font: 0.8rem var(--mono); border: 1px dashed var(--line); border-radius: 6px; }
 .spark-rtt { stroke: var(--accent); stroke-width: 1.6; }
 .spark-loss { stroke: var(--red); stroke-width: 1.4; stroke-dasharray: 3 3; }
+.spark-hit { fill: transparent; }
+.spark-cursor { stroke: var(--muted); stroke-width: 1; opacity: 0; }
+.spark-dot { opacity: 0; }
+.spark-dot-rtt { fill: var(--accent); }
+.spark-dot-loss { fill: var(--red); }
+.spark--hover .spark-cursor { opacity: 0.55; }
+.spark--hover .spark-dot { opacity: 1; }
+.spark-tip {
+  position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -100%);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  padding: 0.3rem 0.5rem; font: 0.72rem var(--mono); color: var(--fg); white-space: nowrap;
+}
+.spark-tip .t { color: var(--muted); }
 
-details { margin-top: 0.6rem; }
-summary { cursor: pointer; color: var(--muted); font: 0.8rem var(--mono); }
-.meas { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font: 0.75rem var(--mono); }
-.meas th, .meas td { border-bottom: 1px solid var(--line); padding: 0.3rem 0.4rem; text-align: right; }
-.meas th:first-child, .meas td:first-child { text-align: left; }
+.msm-link { display: inline-block; margin-top: 0.55rem; font: 0.7rem var(--mono); color: var(--muted); opacity: 0.7; }
+.msm-link:hover { color: var(--accent); opacity: 1; }
 
 .site-footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 0.82rem; padding: 1.2rem 1.5rem; max-width: 1100px; margin: 0 auto; }

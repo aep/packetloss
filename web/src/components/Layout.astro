@@ -29,13 +29,10 @@ const countries = getCountries().countries;
       </nav>
     </header>
     <main><slot /></main>
-    <footer class="site-footer">
-      <p>
-        <strong>Score</strong> averages each destination's relative rank (best per destination = 10)
-        and is reduced by the share of red destinations.
-        <strong>Cell colour</strong> is an absolute health check (RTT + loss thresholds), so red
-        means genuinely poor, not merely "not first". Measurements from RIPE Atlas.
-      </p>
-    </footer>
+    {Astro.slots.has('footer') && (
+      <footer class="site-footer">
+        <slot name="footer" />
+      </footer>
+    )}
   </body>
 </html>

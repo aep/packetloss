@@ -1,25 +1,27 @@
-# PacketLoss — build orchestration. See PRODUCT.md for the design.
+# PacketLoss — four-step pipeline: atlas -> data -> web -> publish.
+# See PRODUCT.md for the design.
 .DEFAULT_GOAL := help
 
-# --- config (override on the command line, e.g. `make run CONFIG_DIR=...`) ---
+# --- config (override on the command line, e.g. `make data JSON_DIR=...`) ---
 CONFIG_DIR ?= config
 DATA_DIR   ?= data
 JSON_DIR   ?= $(DATA_DIR)/json
 
 GO      ?= go
-BUILDER := ./cmd/packetloss   # relative to builder/ (run cd's there first)
+BUILDER := ./cmd/packetloss   # relative to builder/ (recipes cd there first)
 
-.PHONY: help install gen tidy build build-builder build-web lint breaking \
-        run stop-measurements web-dev web-build clean check
+.PHONY: help install gen tidy lint atlas data web publish
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 	  | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-install: ## Install web deps (incl. protoc-gen-es) so codegen can run
+# --- plumbing (run when the proto contract or deps change; the pipeline steps
+#     below use the committed generated code and don't need these each run) ---
+install: ## Install web deps (incl. protoc-gen-es for codegen)
 	cd web && pnpm install
 
-gen: ## Generate Go + TS types from proto via buf
+gen: ## Regenerate Go + TS types from proto via buf
 	buf generate
 
 tidy: gen ## Resolve Go module deps (after codegen, so the pb package exists)
@@ -28,29 +30,29 @@ tidy: gen ## Resolve Go module deps (after codegen, so the pb package exists)
 lint: ## Lint the proto schema
 	buf lint
 
-breaking: ## Check proto for breaking changes against git HEAD
-	buf breaking --against '.git#branch=HEAD'
+# --- the pipeline ---
 
-build: build-builder build-web ## Generate types, build builder + web
+atlas: ## Sync local config to RIPE Atlas measurements (ensure + reconcile probes)
+	cd builder && $(GO) run $(BUILDER) -mode atlas -config ../$(CONFIG_DIR)
 
-build-builder: tidy ## Compile the Go builder (runs gen + tidy first)
-	cd builder && $(GO) build ./...
+data: ## Download measurement results from RIPE into the local cache ($(JSON_DIR))
+	cd builder && $(GO) run $(BUILDER) -mode data -config ../$(CONFIG_DIR) -json ../$(JSON_DIR)
 
-build-web: ## Build the static site (reads $(JSON_DIR))
+web: ## Build the static site from the local cache into web/dist
 	cd web && DATA_DIR=$(abspath $(JSON_DIR)) pnpm build
 
-# Full hourly pipeline: stateless RIPE collect -> score -> export, then static render.
-run: build-builder ## Run the builder pipeline (RIPE -> JSON), then render the site
-	cd builder && $(GO) run $(BUILDER) -config ../$(CONFIG_DIR) -json ../$(JSON_DIR)
-	$(MAKE) build-web
-
-stop-measurements: build-builder ## Stop ALL RIPE measurements created by packetloss (reset)
-	cd builder && $(GO) run $(BUILDER) -stop
-
-web-dev: ## Astro dev server against current $(JSON_DIR)
-	cd web && DATA_DIR=$(abspath $(JSON_DIR)) pnpm dev
-
-clean: ## Remove build outputs (keeps the json artifacts)
-	rm -rf web/dist builder/bin
-
-check: lint build-builder ## Lint proto + compile builder
+publish: ## Upload web/dist to a bunny.net Storage Zone (HTTP API; reads BUNNY_* from .env)
+	@test -d web/dist || { echo "web/dist not found — run 'make web' first"; exit 1; }
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	  : "$${BUNNY_STORAGE_ZONE:?set BUNNY_STORAGE_ZONE in .env}"; \
+	  : "$${BUNNY_STORAGE_KEY:?set BUNNY_STORAGE_KEY in .env}"; \
+	  host=$${BUNNY_STORAGE_ENDPOINT:-storage.bunnycdn.com}; \
+	  cd web/dist && find . -type f | sed 's|^\./||' | while IFS= read -r f; do \
+	    printf '  -> %s\n' "$$f"; \
+	    curl -sS -f -X PUT \
+	      -H "AccessKey: $$BUNNY_STORAGE_KEY" \
+	      -H "Content-Type: application/octet-stream" \
+	      --data-binary @"$$f" \
+	      "https://$$host/$$BUNNY_STORAGE_ZONE/$$f" || exit 1; \
+	  done; \
+	  echo "published $$(find . -type f | wc -l) files to bunny zone '$$BUNNY_STORAGE_ZONE'"

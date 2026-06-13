@@ -40,3 +40,27 @@ export function hasProviderDetail(code: string, asn: number | string): boolean {
 export function hasTargetComparison(code: string, id: string): boolean {
   return existsSync(resolve(DATA_DIR, code, 'targets', `${id}.json`));
 }
+
+// Shared y-axis bounds across every sparkline so 0 sits at the same height and equal
+// values map to equal heights in all charts (comparable across providers, targets and
+// pages). Scans every provider-detail series — the superset of all charted data —
+// once, then caches.
+let _yBounds: { rtt: number; loss: number } | null = null;
+export function getYBounds(): { rtt: number; loss: number } {
+  if (_yBounds) return _yBounds;
+  let rtt = 1;
+  let loss = 1;
+  for (const c of getCountries().countries) {
+    for (const p of getOverview(c.code).providers) {
+      if (!hasProviderDetail(c.code, p.asn)) continue;
+      for (const t of getProviderDetail(c.code, p.asn).targets) {
+        for (const pt of t.series) {
+          if (pt.rttMs > rtt) rtt = pt.rttMs;
+          if (pt.lossPct > loss) loss = pt.lossPct;
+        }
+      }
+    }
+  }
+  _yBounds = { rtt, loss };
+  return _yBounds;
+}

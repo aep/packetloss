@@ -139,91 +139,6 @@ func (x *TimePoint) GetLossPct() float64 {
 	return 0
 }
 
-// One measurement aggregate, for the "last 30 measurements" drill-down.
-type Measurement struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ts            string                 `protobuf:"bytes,1,opt,name=ts,proto3" json:"ts,omitempty"` // RFC3339
-	RttMinMs      float64                `protobuf:"fixed64,2,opt,name=rtt_min_ms,json=rttMinMs,proto3" json:"rtt_min_ms,omitempty"`
-	RttAvgMs      float64                `protobuf:"fixed64,3,opt,name=rtt_avg_ms,json=rttAvgMs,proto3" json:"rtt_avg_ms,omitempty"`
-	RttMaxMs      float64                `protobuf:"fixed64,4,opt,name=rtt_max_ms,json=rttMaxMs,proto3" json:"rtt_max_ms,omitempty"`
-	LossPct       float64                `protobuf:"fixed64,5,opt,name=loss_pct,json=lossPct,proto3" json:"loss_pct,omitempty"`
-	ProbeId       uint32                 `protobuf:"varint,6,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"` // RIPE Atlas probe id
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Measurement) Reset() {
-	*x = Measurement{}
-	mi := &file_packetloss_v1_common_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Measurement) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Measurement) ProtoMessage() {}
-
-func (x *Measurement) ProtoReflect() protoreflect.Message {
-	mi := &file_packetloss_v1_common_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Measurement.ProtoReflect.Descriptor instead.
-func (*Measurement) Descriptor() ([]byte, []int) {
-	return file_packetloss_v1_common_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *Measurement) GetTs() string {
-	if x != nil {
-		return x.Ts
-	}
-	return ""
-}
-
-func (x *Measurement) GetRttMinMs() float64 {
-	if x != nil {
-		return x.RttMinMs
-	}
-	return 0
-}
-
-func (x *Measurement) GetRttAvgMs() float64 {
-	if x != nil {
-		return x.RttAvgMs
-	}
-	return 0
-}
-
-func (x *Measurement) GetRttMaxMs() float64 {
-	if x != nil {
-		return x.RttMaxMs
-	}
-	return 0
-}
-
-func (x *Measurement) GetLossPct() float64 {
-	if x != nil {
-		return x.LossPct
-	}
-	return 0
-}
-
-func (x *Measurement) GetProbeId() uint32 {
-	if x != nil {
-		return x.ProbeId
-	}
-	return 0
-}
-
 var File_packetloss_v1_common_proto protoreflect.FileDescriptor
 
 const file_packetloss_v1_common_proto_rawDesc = "" +
@@ -232,17 +147,7 @@ const file_packetloss_v1_common_proto_rawDesc = "" +
 	"\tTimePoint\x12\x0e\n" +
 	"\x02ts\x18\x01 \x01(\tR\x02ts\x12\x15\n" +
 	"\x06rtt_ms\x18\x02 \x01(\x01R\x05rttMs\x12\x19\n" +
-	"\bloss_pct\x18\x03 \x01(\x01R\alossPct\"\xad\x01\n" +
-	"\vMeasurement\x12\x0e\n" +
-	"\x02ts\x18\x01 \x01(\tR\x02ts\x12\x1c\n" +
-	"\n" +
-	"rtt_min_ms\x18\x02 \x01(\x01R\brttMinMs\x12\x1c\n" +
-	"\n" +
-	"rtt_avg_ms\x18\x03 \x01(\x01R\brttAvgMs\x12\x1c\n" +
-	"\n" +
-	"rtt_max_ms\x18\x04 \x01(\x01R\brttMaxMs\x12\x19\n" +
-	"\bloss_pct\x18\x05 \x01(\x01R\alossPct\x12\x19\n" +
-	"\bprobe_id\x18\x06 \x01(\rR\aprobeId*v\n" +
+	"\bloss_pct\x18\x03 \x01(\x01R\alossPct*v\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fSTATUS_GREEN\x10\x01\x12\x10\n" +
@@ -264,11 +169,10 @@ func file_packetloss_v1_common_proto_rawDescGZIP() []byte {
 }
 
 var file_packetloss_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_packetloss_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_packetloss_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_packetloss_v1_common_proto_goTypes = []any{
-	(Status)(0),         // 0: packetloss.v1.Status
-	(*TimePoint)(nil),   // 1: packetloss.v1.TimePoint
-	(*Measurement)(nil), // 2: packetloss.v1.Measurement
+	(Status)(0),       // 0: packetloss.v1.Status
+	(*TimePoint)(nil), // 1: packetloss.v1.TimePoint
 }
 var file_packetloss_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -289,7 +193,7 @@ func file_packetloss_v1_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_packetloss_v1_common_proto_rawDesc), len(file_packetloss_v1_common_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

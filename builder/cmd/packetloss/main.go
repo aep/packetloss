@@ -1,10 +1,15 @@
-// Command packetloss is the stateless hourly build job: resolve RIPE Atlas probe
-// coverage, ensure ONE ongoing ping measurement per distinct target (spanning every
-// country's probes), fetch the rolling window of results, attribute each to its
-// (country, provider) by probe, score, and export JSON. RIPE Atlas is the store —
-// no local DB. One measurement per target keeps us far under RIPE's cap of 25
-// measurements to the same target, regardless of how many countries we add.
-// See PRODUCT.md "Build pipeline".
+// Command packetloss is the builder for the PacketLoss pipeline. It runs in one of
+// two modes, each a distinct `make` step:
+//
+//	-mode atlas  sync local config to RIPE Atlas: resolve probe coverage per provider
+//	             ASN and ensure ONE ongoing ping measurement per distinct target
+//	             (reuse-by-description else create; reconcile its probe roster).
+//	-mode data   download the rolling window of results from those measurements,
+//	             attribute each to its (country, provider) by probe, score, and write
+//	             the JSON cache the web layer reads.
+//
+// One measurement per target keeps us far under RIPE's cap of 25 measurements to the
+// same target, regardless of how many countries we add. See PRODUCT.md "Build pipeline".
 package main
 
 import (
@@ -14,7 +19,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -57,10 +61,16 @@ type globalTarget struct {
 func run() error {
 	var (
 		configDir = flag.String("config", "config", "config dir (thresholds.yaml + <country>.yaml)")
-		jsonDir   = flag.String("json", "data/json", "output dir for JSON artifacts")
-		stop      = flag.Bool("stop", false, "stop all RIPE measurements created by packetloss, then exit")
+		jsonDir   = flag.String("json", "data/json", "local cache dir for scored JSON artifacts (data mode)")
+		mode      = flag.String("mode", "", "pipeline step: 'atlas' (sync config -> RIPE measurements) or 'data' (download results -> JSON cache)")
 	)
 	flag.Parse()
+
+	switch *mode {
+	case "atlas", "data":
+	default:
+		return fmt.Errorf("set -mode to 'atlas' or 'data'")
+	}
 
 	ctx := context.Background()
 	now := time.Now().UTC()
@@ -70,14 +80,10 @@ func run() error {
 		_ = godotenv.Load(p)
 	}
 	apiKey := os.Getenv("RIPE_ATLAS_API_KEY")
-	rc := ripe.New(apiKey)
-
-	if *stop {
-		return stopAll(ctx, rc)
-	}
 	if apiKey == "" {
-		log.Print("warning: RIPE_ATLAS_API_KEY not set — cannot ensure/list measurements; output will be empty")
+		log.Print("warning: RIPE_ATLAS_API_KEY not set — RIPE calls will fail or return empty")
 	}
+	rc := ripe.New(apiKey)
 
 	cfg, err := config.Load(*configDir)
 	if err != nil {
@@ -85,11 +91,34 @@ func run() error {
 	}
 	log.Printf("config: %d countries, window=%dd, min_probes=%d",
 		len(cfg.Countries), cfg.Thresholds.WindowDays, cfg.Thresholds.MinProbes)
-	window := now.AddDate(0, 0, -cfg.Thresholds.WindowDays)
 
-	var collectErrs []error
+	// Shared across both modes: resolve probe coverage per (country, provider), then
+	// dedupe targets across countries into one global target each.
+	states, probeInfo, errs := resolveCoverage(ctx, rc, cfg)
+	targets, order, err := buildTargets(cfg, states)
+	if err != nil {
+		return err
+	}
 
-	// Phase 1: resolve probe coverage per (country, provider).
+	switch *mode {
+	case "atlas":
+		errs = append(errs, syncAtlas(ctx, rc, cfg, targets, order)...)
+	case "data":
+		window := now.AddDate(0, 0, -cfg.Thresholds.WindowDays)
+		errs = append(errs, collectData(ctx, rc, cfg, states, probeInfo, targets, order, window, now, *jsonDir)...)
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("%s step had errors:\n%w", *mode, errors.Join(errs...))
+	}
+	return nil
+}
+
+// resolveCoverage resolves connected RIPE probes per provider ASN, gating out
+// under-covered providers, and records the (country, provider) each probe is
+// attributed to. Used by both modes.
+func resolveCoverage(ctx context.Context, rc *ripe.Client, cfg *config.Config) (map[string]*countryState, map[uint32]probeMeta, []error) {
+	var errs []error
 	states := map[string]*countryState{}
 	probeInfo := map[uint32]probeMeta{}
 	for _, c := range cfg.Countries {
@@ -109,7 +138,7 @@ func run() error {
 			probes, total, err := rc.ProbesByASN(ctx, p.ASN, c.Code, cfg.Thresholds.ProbesPerProvider)
 			if err != nil {
 				log.Printf("%s AS%d: probes: %v", c.Code, p.ASN, err)
-				collectErrs = append(collectErrs, fmt.Errorf("%s AS%d probes: %w", c.Code, p.ASN, err))
+				errs = append(errs, fmt.Errorf("%s AS%d probes: %w", c.Code, p.ASN, err))
 				continue
 			}
 			st.probeCounts[p.ASN] = total // true connected-probe count, not the capped sample
@@ -122,8 +151,12 @@ func run() error {
 			}
 		}
 	}
+	return states, probeInfo, errs
+}
 
-	// Phase 2: dedupe targets across countries -> one global target per id.
+// buildTargets dedupes targets across countries into one global target per id,
+// spanning the covered probes of every country that includes it.
+func buildTargets(cfg *config.Config, states map[string]*countryState) (map[string]*globalTarget, []string, error) {
 	targets := map[string]*globalTarget{}
 	var order []string
 	for _, c := range cfg.Countries {
@@ -135,17 +168,28 @@ func run() error {
 				targets[t.ID] = gt
 				order = append(order, t.ID)
 			} else if gt.endpoint != ep {
-				return fmt.Errorf("target %q has conflicting endpoints across countries (%q vs %q)", t.ID, gt.endpoint, ep)
+				return nil, nil, fmt.Errorf("target %q has conflicting endpoints across countries (%q vs %q)", t.ID, gt.endpoint, ep)
 			}
 			gt.countries[c.Code] = true
 			gt.probeIDs = append(gt.probeIDs, states[c.Code].probeIDs...)
 		}
 	}
+	return targets, order, nil
+}
 
-	// Phase 3: one measurement per distinct target; fetch + attribute to (country, provider).
+// syncAtlas (mode=atlas) ensures one ongoing ping measurement per distinct target and
+// reconciles its probe roster to today's config. It creates/updates RIPE state but
+// fetches no results — RIPE needs an interval to execute new measurements before the
+// data step can read them.
+func syncAtlas(ctx context.Context, rc *ripe.Client, cfg *config.Config, targets map[string]*globalTarget, order []string) []error {
+	if rc.APIKey == "" {
+		return []error{fmt.Errorf("atlas: RIPE_ATLAS_API_KEY required to ensure measurements")}
+	}
+	var errs []error
 	for _, id := range order {
 		gt := targets[id]
-		if rc.APIKey == "" || len(gt.probeIDs) == 0 {
+		if len(gt.probeIDs) == 0 {
+			log.Printf("target %s: no covered probes — skipping", id)
 			continue
 		}
 		if len(gt.probeIDs) > 1000 {
@@ -156,28 +200,58 @@ func run() error {
 		msmID, created, err := rc.EnsureMeasurement(ctx, gt.endpoint, desc, gt.resolveOnProbe, gt.probeIDs, cfg.Thresholds.MeasurementIntervalSecond, cfg.Thresholds.Packets)
 		if err != nil {
 			log.Printf("target %s: ensure: %v", id, err)
-			collectErrs = append(collectErrs, fmt.Errorf("%s: %w", id, err))
+			errs = append(errs, fmt.Errorf("%s: %w", id, err))
 			continue
 		}
 		if created {
 			log.Printf("target %s: created measurement %d (%d probes, %d countries)", id, msmID, len(gt.probeIDs), len(gt.countries))
-		} else {
-			log.Printf("target %s: reusing measurement %d", id, msmID)
-			// Reconcile probe roster to match today's config. New adds participate on
-			// the next interval tick (RIPE has no immediate-trigger API).
-			added, removed, err := rc.ReconcileProbes(ctx, msmID, gt.probeIDs)
-			switch {
-			case err != nil:
-				log.Printf("target %s: reconcile FAILED (intended +%d -%d): %v", id, len(added), len(removed), err)
-				collectErrs = append(collectErrs, fmt.Errorf("%s reconcile: %w", id, err))
-			case len(added) > 0 || len(removed) > 0:
-				log.Printf("target %s: reconciled msm %d: +%d (%v) / -%d (%v)", id, msmID, len(added), added, len(removed), removed)
-			}
+			continue
 		}
+		log.Printf("target %s: reusing measurement %d", id, msmID)
+		// Reconcile probe roster to match today's config. New adds participate on
+		// the next interval tick (RIPE has no immediate-trigger API).
+		added, removed, err := rc.ReconcileProbes(ctx, msmID, gt.probeIDs)
+		switch {
+		case err != nil:
+			log.Printf("target %s: reconcile FAILED (intended +%d -%d): %v", id, len(added), len(removed), err)
+			errs = append(errs, fmt.Errorf("%s reconcile: %w", id, err))
+		case len(added) > 0 || len(removed) > 0:
+			log.Printf("target %s: reconciled msm %d: +%d (%v) / -%d (%v)", id, msmID, len(added), added, len(removed), removed)
+		}
+	}
+	return errs
+}
+
+// collectData (mode=data) locates each target's measurement (created by the atlas
+// step), fetches the rolling window, attributes results to (country, provider), scores
+// in-memory, and writes the JSON cache the web layer reads.
+func collectData(ctx context.Context, rc *ripe.Client, cfg *config.Config, states map[string]*countryState, probeInfo map[uint32]probeMeta, targets map[string]*globalTarget, order []string, window, now time.Time, jsonDir string) []error {
+	var errs []error
+	if rc.APIKey == "" {
+		errs = append(errs, fmt.Errorf("data: RIPE_ATLAS_API_KEY required to list/fetch measurements"))
+	}
+	msmIDs := map[string]int64{} // target id -> measurement id, for the web source link
+	for _, id := range order {
+		gt := targets[id]
+		if rc.APIKey == "" || len(gt.probeIDs) == 0 {
+			continue
+		}
+		desc := "packetloss " + id
+		msmID, found, err := rc.FindMeasurement(ctx, desc)
+		if err != nil {
+			log.Printf("target %s: find: %v", id, err)
+			errs = append(errs, fmt.Errorf("%s: %w", id, err))
+			continue
+		}
+		if !found {
+			log.Printf("target %s: no measurement yet — run 'make atlas' first", id)
+			continue
+		}
+		msmIDs[id] = msmID
 		pings, err := rc.FetchResults(ctx, msmID, window)
 		if err != nil {
 			log.Printf("target %s: fetch: %v", id, err)
-			collectErrs = append(collectErrs, fmt.Errorf("%s: %w", id, err))
+			errs = append(errs, fmt.Errorf("%s: %w", id, err))
 			continue
 		}
 		var n int
@@ -200,7 +274,7 @@ func run() error {
 		}
 	}
 
-	// Phase 4: score + export per country.
+	// Score + export per country into the local cache.
 	var reps []score.CountryReport
 	for _, c := range cfg.Countries {
 		st := states[c.Code]
@@ -208,22 +282,16 @@ func run() error {
 		reps = append(reps, rep)
 		log.Printf("scored %s: %d providers, %d samples in window", c.Code, len(rep.Providers), len(st.results))
 	}
-
 	for _, rep := range reps {
-		if err := export.WriteCountry(*jsonDir, rep); err != nil {
-			return err
+		if err := export.WriteCountry(jsonDir, rep, msmIDs); err != nil {
+			return append(errs, err)
 		}
 	}
-	if err := export.WriteCountryList(*jsonDir, reps, now); err != nil {
-		return err
+	if err := export.WriteCountryList(jsonDir, reps, now); err != nil {
+		return append(errs, err)
 	}
-	log.Printf("exported JSON artifacts to %s", *jsonDir)
-
-	// Surface collection failures as a non-zero exit (artifacts were still written).
-	if len(collectErrs) > 0 {
-		return fmt.Errorf("collection had errors:\n%w", errors.Join(collectErrs...))
-	}
-	return nil
+	log.Printf("exported JSON artifacts to %s", jsonDir)
+	return errs
 }
 
 // nonNeg clamps RIPE's -1 "no RTT" sentinel (fully-lost ping) to 0.
@@ -232,31 +300,4 @@ func nonNeg(f float64) float64 {
 		return 0
 	}
 	return f
-}
-
-// stopAll stops every active RIPE measurement created by packetloss (description
-// prefix "packetloss "). Used by `make stop-measurements` to reset.
-func stopAll(ctx context.Context, rc *ripe.Client) error {
-	mine, err := rc.ListMine(ctx)
-	if err != nil {
-		return err
-	}
-	var stopped, failed int
-	for _, m := range mine {
-		if m.Status.ID > 2 || !strings.HasPrefix(m.Description, "packetloss ") {
-			continue // already stopped, or not ours
-		}
-		if err := rc.StopMeasurement(ctx, m.ID); err != nil {
-			log.Printf("stop %d (%s): %v", m.ID, m.Description, err)
-			failed++
-			continue
-		}
-		log.Printf("stopped %d (%s)", m.ID, m.Description)
-		stopped++
-	}
-	log.Printf("stop-measurements: %d stopped, %d failed", stopped, failed)
-	if failed > 0 {
-		return fmt.Errorf("failed to stop %d measurement(s)", failed)
-	}
-	return nil
 }

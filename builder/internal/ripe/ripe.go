@@ -195,6 +195,13 @@ func (c *Client) ListMine(ctx context.Context) ([]MeasurementSummary, error) {
 	return out, nil
 }
 
+// FindMeasurement returns the id of an active measurement we own whose description
+// matches exactly, if any — without creating one. The data step uses it to locate a
+// measurement the atlas step already ensured.
+func (c *Client) FindMeasurement(ctx context.Context, description string) (id int64, found bool, err error) {
+	return c.findOngoing(ctx, description)
+}
+
 // findOngoing returns the id of an active measurement we own with an exactly matching
 // description, if any.
 func (c *Client) findOngoing(ctx context.Context, description string) (int64, bool, error) {

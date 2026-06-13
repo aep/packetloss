@@ -56,6 +56,7 @@ message Cell {
   double rtt_p50_ms = 4;
   double loss_pct = 5;
   bool has_data = 6;
+  double jitter_ms = 7;  // mean consecutive RTT deviation (RFC3550-style) over the window
 }
 
 // ---- <country>/providers/<asn>.json : the provider detail page ----
@@ -76,8 +77,9 @@ message TargetSeries {
   string target_name = 2;
   double score = 3;
   Status status = 4;
-  repeated TimePoint series = 5;    // small RTT+loss chart
-  repeated Measurement last30 = 6;  // drill-down (uPlot island / table)
+  repeated TimePoint series = 5;  // small RTT+loss chart
+  reserved 6;                     // was: repeated Measurement last30
+  uint32 measurement_id = 7;      // RIPE Atlas measurement for this target; link to /measurements/<id>/
 }
 
 // ---- <country>/targets/<id>.json : the target comparison page ----
@@ -88,6 +90,7 @@ message TargetComparison {
   string kind = 4;
   string generated_at = 5;
   repeated ProviderSeries providers = 6;  // overlaid lines, best first
+  uint32 measurement_id = 7;              // RIPE Atlas measurement for this target; link to /measurements/<id>/
 }
 
 message ProviderSeries {

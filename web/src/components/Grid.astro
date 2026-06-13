@@ -37,12 +37,14 @@ const hasScore = (status: Status, covered: boolean) => covered && status !== Sta
         {p.cells.map((c) => (
           <td
             class={`cell ${statusClass(c.status)}`}
-            title={c.hasData ? `${c.rttP50Ms.toFixed(1)} ms · ${c.lossPct.toFixed(1)}% loss` : statusLabel(c.status)}
+            title={c.hasData ? `${c.rttP50Ms.toFixed(1)} ms · ${c.lossPct.toFixed(1)}% loss · ${c.jitterMs.toFixed(1)} ms jitter` : statusLabel(c.status)}
           >
             {c.hasData && (
               <>
                 <span class="cell-rtt">{c.rttP50Ms.toFixed(0)}ms</span>
-                {c.lossPct >= 1 && <span class="cell-loss"> · {c.lossPct.toFixed(0)}%</span>}
+                {c.lossPct >= 1
+                  ? <span class="cell-loss"> · {c.lossPct.toFixed(0)}%</span>
+                  : c.jitterMs >= 5 && <span class="cell-jitter"> · ±{c.jitterMs.toFixed(0)}ms</span>}
               </>
             )}
           </td>

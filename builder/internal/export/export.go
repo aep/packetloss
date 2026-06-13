@@ -18,7 +18,8 @@ import (
 var marshal = protojson.MarshalOptions{Multiline: true, Indent: "  ", EmitDefaultValues: true}
 
 // WriteCountry writes overview.json, providers/<asn>.json and targets/<id>.json.
-func WriteCountry(jsonDir string, rep score.CountryReport) error {
+// msmIDs maps target id -> RIPE Atlas measurement id, for the per-target source link.
+func WriteCountry(jsonDir string, rep score.CountryReport, msmIDs map[string]int64) error {
 	base := filepath.Join(jsonDir, rep.Code)
 	gen := rep.GeneratedAt.Format(time.RFC3339)
 
@@ -34,7 +35,7 @@ func WriteCountry(jsonDir string, rep score.CountryReport) error {
 		for _, c := range p.Cells {
 			row.Cells = append(row.Cells, &pb.Cell{
 				TargetId: c.TargetID, Status: status(c.Status), Score: c.Score,
-				RttP50Ms: c.RTTp50, LossPct: c.LossPct, HasData: c.HasData,
+				RttP50Ms: c.RTTp50, LossPct: c.LossPct, JitterMs: c.Jitter, HasData: c.HasData,
 			})
 		}
 		ov.Providers = append(ov.Providers, row)
@@ -50,7 +51,7 @@ func WriteCountry(jsonDir string, rep score.CountryReport) error {
 			GeneratedAt: gen,
 		}
 		for _, t := range rep.Targets {
-			ts := &pb.TargetSeries{TargetId: t.ID, TargetName: t.Name}
+			ts := &pb.TargetSeries{TargetId: t.ID, TargetName: t.Name, MeasurementId: uint32(msmIDs[t.ID])}
 			for _, c := range p.Cells {
 				if c.TargetID == t.ID {
 					ts.Score, ts.Status = c.Score, status(c.Status)
@@ -58,12 +59,6 @@ func WriteCountry(jsonDir string, rep score.CountryReport) error {
 			}
 			for _, tp := range p.Series[t.ID] {
 				ts.Series = append(ts.Series, timePoint(tp))
-			}
-			for _, m := range p.Last30[t.ID] {
-				ts.Last30 = append(ts.Last30, &pb.Measurement{
-					Ts: m.TS.Format(time.RFC3339), RttMinMs: m.RTTMin, RttAvgMs: m.RTTAvg,
-					RttMaxMs: m.RTTMax, LossPct: m.LossPct, ProbeId: m.ProbeID,
-				})
 			}
 			d.Targets = append(d.Targets, ts)
 		}
@@ -74,7 +69,8 @@ func WriteCountry(jsonDir string, rep score.CountryReport) error {
 
 	for _, t := range rep.Targets {
 		tc := &pb.TargetComparison{
-			CountryCode: rep.Code, TargetId: t.ID, TargetName: t.Name, Kind: t.Kind, GeneratedAt: gen,
+			CountryCode: rep.Code, TargetId: t.ID, TargetName: t.Name, Kind: t.Kind,
+			MeasurementId: uint32(msmIDs[t.ID]), GeneratedAt: gen,
 		}
 		for _, p := range rep.Providers {
 			if !p.Covered {
