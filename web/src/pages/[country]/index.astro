@@ -13,13 +13,9 @@ const ov = getOverview(country!);
 
 <Layout title={`${ov.countryName} ranking`} activeCountry={country}>
   <h1>{ov.countryName}</h1>
-  <p class="sub">Transit / ISP reachability to top destinations · generated {ov.generatedAt}</p>
+  <p class="sub">Transit / ISP reachability to top destinations in the last 7 days · generated {ov.generatedAt}</p>
   <Grid overview={ov} country={country!} />
   <p slot="footer">
-    <strong>Score</strong> is an absolute 0–10 grade per destination from a fixed
-    latency + loss + jitter curve (10 ≈ near-perfect), peer-independent and comparable
-    across countries. A provider's score averages its destinations and is reduced by the
-    share of red destinations. <strong>Cell colour</strong> comes from that same score via
-    fixed thresholds, so red means genuinely poor. Measurements from RIPE Atlas.
+    Absolute 0–10 scores from RIPE Atlas measurements. <a href="/faq/">How we rank providers →</a>
   </p>
 </Layout>

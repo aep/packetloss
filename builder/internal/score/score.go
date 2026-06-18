@@ -55,6 +55,7 @@ type Cell struct {
 type ProviderReport struct {
 	ASN        uint32
 	Name       string
+	Kind       string
 	Score      float64
 	Status     Status
 	Covered    bool
@@ -63,7 +64,11 @@ type ProviderReport struct {
 	Series     map[string][]TimePoint
 }
 
-type TargetRef struct{ ID, Name, Kind string }
+type TargetRef struct {
+	ID, Name, Kind string
+	Target         string // RIPE ping target: hostname or pinned IP
+	ResolveOnProbe bool   // hostname resolved per-probe (anycast/CDN nearest edge)
+}
 
 type CountryReport struct {
 	Code        string
@@ -82,7 +87,11 @@ type ptKey struct {
 func Compute(c config.Country, th config.Thresholds, probeCounts map[uint32]int, results []Result, now time.Time) CountryReport {
 	rep := CountryReport{Code: c.Code, Name: c.Name, GeneratedAt: now}
 	for _, t := range c.Targets {
-		rep.Targets = append(rep.Targets, TargetRef{ID: t.ID, Name: t.Name, Kind: t.Kind})
+		endpoint, resolveOnProbe := t.Endpoint()
+		rep.Targets = append(rep.Targets, TargetRef{
+			ID: t.ID, Name: t.Name, Kind: t.Kind,
+			Target: endpoint, ResolveOnProbe: resolveOnProbe,
+		})
 	}
 
 	byPT := map[ptKey][]Result{}
@@ -122,6 +131,7 @@ func Compute(c config.Country, th config.Thresholds, probeCounts map[uint32]int,
 		pr := ProviderReport{
 			ASN:        p.ASN,
 			Name:       p.Name,
+			Kind:       p.Kind,
 			ProbeCount: probeCounts[p.ASN],
 			Covered:    probeCounts[p.ASN] >= th.MinProbes,
 			Series:     map[string][]TimePoint{},

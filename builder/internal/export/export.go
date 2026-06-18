@@ -29,7 +29,7 @@ func WriteCountry(jsonDir string, rep score.CountryReport, msmIDs map[string]int
 	}
 	for _, p := range rep.Providers {
 		row := &pb.ProviderRow{
-			Asn: p.ASN, Name: p.Name, Score: p.Score, Status: status(p.Status),
+			Asn: p.ASN, Name: p.Name, Kind: p.Kind, Score: p.Score, Status: status(p.Status),
 			Covered: p.Covered, ProbeCount: uint32(p.ProbeCount),
 		}
 		for _, c := range p.Cells {
@@ -71,6 +71,7 @@ func WriteCountry(jsonDir string, rep score.CountryReport, msmIDs map[string]int
 		tc := &pb.TargetComparison{
 			CountryCode: rep.Code, TargetId: t.ID, TargetName: t.Name, Kind: t.Kind,
 			MeasurementId: uint32(msmIDs[t.ID]), GeneratedAt: gen,
+			Target: t.Target, ResolveOnProbe: t.ResolveOnProbe,
 		}
 		for _, p := range rep.Providers {
 			if !p.Covered {

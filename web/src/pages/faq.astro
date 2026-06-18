@@ -1,0 +1,43 @@
+---
+import Layout from '../components/Layout.astro';
+---
+
+<Layout title="FAQ" activePage="faq">
+  <article class="prose">
+    <h1>FAQ</h1>
+
+    <h2>How we rank providers</h2>
+    <p>
+      Every provider gets one absolute score, <strong>0–10</strong> (10 ≈ perfect). It
+      doesn't depend on the rest of the table, so a 7 means the same thing everywhere.
+    </p>
+    <ul>
+      <li><strong>Measure</strong> — RIPE Atlas probes in (or single-homed behind) the provider ping major clouds + top consumer networks hourly, over a rolling 7&nbsp;days.</li>
+      <li><strong>Cost</strong> — <code>latency + 10×loss% + 3×jitter</code> (ms). Loss and jitter weigh heavier because they hurt more than raw speed.</li>
+      <li><strong>Score</strong> — cost ≤ 5&nbsp;ms scores a flat 10; above that it decays exponentially (÷2.7 per 80&nbsp;ms).</li>
+      <li><strong>Roll-up</strong> — provider score = average of its destinations, reduced by its share of red ones.</li>
+    </ul>
+    <p>Colours come from the score, not the table:</p>
+    <ul>
+      <li><span class="legend s-green">green</span> ≥ 7.0 &nbsp; <span class="legend s-amber">amber</span> ≥ 3.0 &nbsp; <span class="legend s-red">red</span> &lt; 3.0 &nbsp; <span class="legend s-na">n/a</span> too little coverage.</li>
+    </ul>
+
+    <h2>Where's the data from?</h2>
+    <p>
+      Public <a href="https://atlas.ripe.net/" target="_blank" rel="noopener">RIPE Atlas</a>
+      measurements. Each provider page links its raw measurement.
+    </p>
+
+    <h2>Which sources are listed?</h2>
+    <p>
+      The top 100 networks per country by
+      <a href="https://bgp.tools/rankings/DE?sort=cone" target="_blank" rel="noopener">bgp.tools cone ranking</a>
+      (the count of networks reachable through them). Bigger cone ≈ more traffic depends on it.
+    </p>
+
+    <h2>Why is some data missing?</h2>
+    <p>
+	we rely on ripe atlas probes to be in the source network. Some networks do not have enough probes (currently 1, requirement may increase in the future)
+    </p>
+  </article>
+</Layout>

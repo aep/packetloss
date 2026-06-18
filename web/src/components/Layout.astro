@@ -5,8 +5,9 @@ import { getCountries } from '../lib/data';
 interface Props {
   title: string;
   activeCountry?: string;
+  activePage?: 'faq' | 'imprint';
 }
-const { title, activeCountry } = Astro.props;
+const { title, activeCountry, activePage } = Astro.props;
 const countries = getCountries().countries;
 ---
 
@@ -23,9 +24,12 @@ const countries = getCountries().countries;
       <nav class="countries">
         {countries.map((c) => (
           <a href={`/${c.code}/`} class={c.code === activeCountry ? 'active' : ''}>
-            {c.code.toUpperCase()}
+            {c.name}
           </a>
         ))}
+        <a href="/faq/" class={activePage === 'faq' ? 'active' : ''}>FAQ</a>
+        <a href="/imprint/" class={activePage === 'imprint' ? 'active' : ''}>Imprint</a>
+        <a href="https://github.com/aep/packetloss" target="_blank" rel="noopener">GitHub</a>
       </nav>
     </header>
     <main><slot /></main>

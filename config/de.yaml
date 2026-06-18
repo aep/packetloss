@@ -4,26 +4,130 @@
 code: de
 name: Germany
 
+# Top 100 DE networks by AS Cone Rank (bgp.tools/rankings/DE?sort=cone), in rank order.
+# probe_ids / proxy notes below are hand-curated for nets with no clean native DE probe;
+# leave them in place when refreshing the ranking.
+#
+# `kind` classifies each network so the web frontend can filter (cone rank rewards
+# transit fan-out, so hosting/colo nets float to the top and crowd out the eyeball
+# ISPs people actually care about). Values:
+#   eyeball  — access ISP (consumer/business broadband, cable, Stadtwerke, fiber, edu)
+#   transit  — carrier / backbone / wholesale IP transit
+#   content  — hosting / colo / datacenter / cloud / CDN / DDoS / vanity-AS
+#   ixp      — internet exchange management ASN
 providers:
-  - { asn: 3320,  name: Deutsche Telekom }      # DTAG
-  - { asn: 3209,  name: Vodafone DE }           # ex-Arcor; 195 connected DE probes (best coverage)
-  - { asn: 6805,  name: Telefónica / O2 }       # 3rd national operator; 41 connected DE probes
-  - { asn: 8881,  name: 1&1 Versatel }
-  - { asn: 8767,  name: M-net }
-  # AS33891 has zero RIPE Atlas probes anywhere. AS210793 (Altonetz GmbH) is BGP
-  # single-homed behind it (100% of v4 path obs transit AS33891, no other upstream),
-  # so its 3 live DE probes are used as proxies. Cleaner attribution than AS5405's.
-  - { asn: 33891, name: Core Backbone, probe_ids: [29203, 62096, 1007733] }
+  - { asn: 3320,  name: Deutsche Telekom, kind: eyeball }   # #1 cone — DTAG
   # AS5405 has no live DE probe of its own; AS48777 (DARC e.V.) is the cleanest topology
   # downstream — only 3 upstreams observed, ~77% of v4 path obs transit AS5405 — so probe
   # 1009864 is used as a best-effort proxy. Score is a transit blend, not pure-AS5405.
-  - { asn: 5405,  name: Inter.link, probe_ids: [1009864] }
-  - { asn: 8560,  name: IONOS / 1&1 }           # verify mapping
-  - { asn: 1299,  name: Arelion }               # ex-Telia Carrier; 2 native DE probes
-  - { asn: 174,   name: Cogent }                # 1 native DE probe (system-anchor)
+  - { asn: 5405,  name: Inter.link, kind: transit, probe_ids: [1009864] }   # #2 cone
+  # AS33891 has zero RIPE Atlas probes anywhere. AS210793 (Altonetz GmbH) is BGP
+  # single-homed behind it (100% of v4 path obs transit AS33891, no other upstream),
+  # so its 3 live DE probes are used as proxies. Cleaner attribution than AS5405's.
+  - { asn: 33891, name: Core Backbone, kind: transit, probe_ids: [29203, 62096, 1007733] }  # #3 cone
+  - { asn: 50629, name: LWLcom, kind: transit }             # #4 cone
+  - { asn: 24961, name: WIIT (fka myLoc), kind: content }   # #5 cone
   # AS13237 (euNetworks/LambdaNet) has no native DE probes. AS203520 (Xantaro) is BGP
   # single-homed behind it (100% v4 path obs, 1 left), so its probe is a clean proxy.
-  - { asn: 13237, name: euNetworks, probe_ids: [13190] }
+  - { asn: 13237, name: euNetworks, kind: transit, probe_ids: [13190] }     # #6 cone
+  - { asn: 3214,  name: xTom, kind: content }               # #7 cone
+  - { asn: 212895, name: Johannes Ernst, kind: content }    # #8 cone
+  - { asn: 205103, name: Telegraph42, kind: transit }       # #9 cone
+  - { asn: 8881,  name: 1&1 Versatel, kind: eyeball }       # #10 cone
+  - { asn: 3209,  name: Vodafone DE, kind: eyeball }        # #11 cone — ex-Arcor; 195 connected DE probes
+  - { asn: 49581, name: Tube-Hosting, kind: content }       # #12 cone — Ferdinand Zink
+  - { asn: 34549, name: meerfarbig, kind: content }         # #13 cone
+  - { asn: 48927, name: ESEVEN DevOps, kind: content }      # #14 cone
+  - { asn: 30823, name: aurologic, kind: content }          # #15 cone
+  - { asn: 215828, name: TMW Global Network, kind: content } # #15 cone — Tizian Maxime Weigt
+  - { asn: 51202, name: NUXOA, kind: content }              # #16 cone
+  - { asn: 58212, name: dataforest, kind: content }         # #17 cone
+  - { asn: 34309, name: Link11, kind: content }             # #18 cone — DDoS mitigation
+  - { asn: 8767,  name: M-net, kind: eyeball }              # #19 cone
+  - { asn: 24940, name: Hetzner, kind: content }            # #20 cone
+  - { asn: 9136,  name: WOBCOM, kind: eyeball }             # #21 cone
+  - { asn: 9145,  name: EWE TEL, kind: eyeball }            # #22 cone
+  - { asn: 62403, name: PletX, kind: content }              # #23 cone
+  - { asn: 21413, name: Envia Tel, kind: eyeball }          # #24 cone
+  - { asn: 41692, name: OpenCarrier, kind: transit }        # #25 cone — carrier cooperative
+  - { asn: 12586, name: GHOSTnet, kind: content }           # #26 cone
+  - { asn: 8422,  name: NetCologne, kind: eyeball }         # #27 cone
+  - { asn: 25394, name: MK Netzdienste, kind: eyeball }     # #28 cone
+  - { asn: 47536, name: PathConnect, kind: content }        # #28 cone
+  - { asn: 197071, name: active 1, kind: content }          # #29 cone
+  - { asn: 12843, name: TelemaxX, kind: content }           # #30 cone — colo/datacenter
+  - { asn: 16097, name: HL komm, kind: transit }            # #30 cone
+  - { asn: 30962, name: comtrance service, kind: eyeball }  # #31 cone
+  - { asn: 680,   name: DFN, kind: eyeball }                # #32 cone — Deutsches Forschungsnetz (edu)
+  - { asn: 21473, name: PFALZKOM, kind: eyeball }           # #33 cone
+  - { asn: 29670, name: IN-Berlin, kind: eyeball }          # #33 cone
+  - { asn: 213449, name: Jann-Ole Wagenaar, kind: content } # #33 cone
+  - { asn: 41108, name: comtrance service, kind: eyeball }  # #34 cone
+  - { asn: 20676, name: Plusnet, kind: eyeball }            # #35 cone
+  - { asn: 8899,  name: inexio, kind: eyeball }             # #36 cone
+  - { asn: 21385, name: Trusted Network, kind: content }    # #37 cone
+  - { asn: 15763, name: DOKOM, kind: eyeball }              # #38 cone
+  - { asn: 12337, name: noris network, kind: content }      # #38 cone — datacenter/colo
+  - { asn: 15943, name: wilhelm.tel, kind: eyeball }        # #39 cone
+  - { asn: 9063,  name: VSE NET, kind: eyeball }            # #39 cone
+  - { asn: 12329, name: GLASFASER RUHR, kind: eyeball }     # #39 cone
+  - { asn: 553,   name: BelWü, kind: eyeball }              # #39 cone — edu network
+  - { asn: 24637, name: WEBDISCOUNT, kind: content }        # #40 cone
+  - { asn: 51396, name: Pfcloud, kind: content }            # #40 cone
+  - { asn: 29551, name: Aixit, kind: content }              # #40 cone — datacenter/colo
+  - { asn: 16024, name: GELSEN-NET, kind: eyeball }         # #40 cone
+  - { asn: 41998, name: NetCom BW, kind: eyeball }          # #41 cone
+  - { asn: 213973, name: BCIX Management, kind: ixp }       # #41 cone
+  - { asn: 207252, name: Felix Gassan, kind: content }      # #41 cone
+  - { asn: 12306, name: Plus.line, kind: content }          # #41 cone — colo Frankfurt
+  - { asn: 44066, name: firstcolo, kind: content }          # #42 cone
+  - { asn: 214915, name: Jan Smyrek, kind: content }        # #43 cone
+  - { asn: 12611, name: R-KOM Regensburger, kind: eyeball } # #43 cone
+  - { asn: 48918, name: Globalways, kind: eyeball }         # #43 cone
+  - { asn: 60169, name: R-KOM Regensburger, kind: eyeball } # #44 cone
+  - { asn: 48314, name: IP-Projects, kind: content }        # #44 cone
+  - { asn: 34953, name: RelAix Networks, kind: eyeball }    # #45 cone
+  - { asn: 28876, name: suec // dacor, kind: eyeball }      # #46 cone
+  - { asn: 20647, name: IPB Berlin, kind: eyeball }         # #46 cone
+  - { asn: 13101, name: TNG Stadtnetz, kind: eyeball }      # #46 cone
+  - { asn: 216078, name: Liam Kremer, kind: content }       # #46 cone
+  - { asn: 203329, name: NTT Global DC EMEA, kind: content } # #46 cone — datacenter
+  - { asn: 15702, name: euNetworks, kind: transit }         # #46 cone
+  - { asn: 42652, name: inexio, kind: eyeball }             # #46 cone
+  - { asn: 214292, name: DE-CIX Management, kind: ixp }     # #47 cone
+  - { asn: 57575, name: NETMOUNTAINS Group, kind: content } # #47 cone
+  - { asn: 9211,  name: Nawork, kind: content }             # #47 cone
+  - { asn: 196714, name: Thueringer Netkom, kind: eyeball } # #47 cone
+  - { asn: 200461, name: Ian David Klemm, kind: content }   # #48 cone
+  - { asn: 47526, name: handily networks, kind: content }   # #49 cone
+  - { asn: 216067, name: BHS Solutions, kind: content }     # #49 cone
+  - { asn: 215787, name: TELE90 Telecom, kind: transit }    # #50 cone
+  - { asn: 48646, name: SDRmedia, kind: content }           # #50 cone
+  - { asn: 30742, name: Bremen Briteline, kind: eyeball }   # #50 cone
+  - { asn: 5539,  name: SpaceNet, kind: content }           # #50 cone
+  - { asn: 47447, name: 23M, kind: content }                # #50 cone
+  - { asn: 48200, name: Opteamax, kind: content }           # #50 cone
+  - { asn: 61218, name: 4b42, kind: content }               # #50 cone
+  - { asn: 6805,  name: Telefónica / O2, kind: eyeball }    # #51 cone — 3rd national operator; 41 DE probes
+  - { asn: 15598, name: NorthC Deutschland, kind: content } # #51 cone — datacenter
+  - { asn: 21263, name: TeleData, kind: eyeball }           # #51 cone
+  - { asn: 58243, name: TELE AG, kind: eyeball }            # #51 cone
+  - { asn: 201011, name: Core-Backbone, kind: eyeball }     # #52 cone
+  - { asn: 8365,  name: Man-da.de, kind: eyeball }          # #52 cone — Darmstadt regional/edu
+  - { asn: 12731, name: IPHH, kind: content }               # #52 cone — Internet Port Hamburg colo
+  - { asn: 61407, name: NewTelco, kind: content }           # #52 cone — colo/interconnect
+  - { asn: 8804,  name: regio.NET Holding, kind: eyeball }  # #52 cone
+  - { asn: 50873, name: David Doepelheuer, kind: content }  # #52 cone
+  - { asn: 8560,  name: IONOS / 1&1, kind: content }        # #52 cone — hosting; verify mapping
+  - { asn: 12693, name: e.discom, kind: eyeball }           # #52 cone
+  - { asn: 59645, name: Tobias Fiebig, kind: content }      # #52 cone
+  - { asn: 8391,  name: Knipp Medien, kind: content }       # #52 cone
+  - { asn: 8893,  name: Artfiles New Media, kind: content } # #52 cone
+  - { asn: 44486, name: SYNLINQ, kind: content }            # #52 cone — Oliver Horscht
+  # --- below: transit nets outside the cone-100 but kept for their curated probe data ---
+  - { asn: 60294, name: Deutsche Glasfaser, kind: eyeball } # AS60294 (DG Wholesale); 7 native DE probes
+  - { asn: 1299,  name: Arelion, kind: transit }            # ex-Telia Carrier; 2 native DE probes
+  - { asn: 174,   name: Cogent, kind: transit }             # 1 native DE probe (system-anchor)
   # AS9002 (RETN) intentionally omitted: no native DE probes and no clean single-homed
   # customer with a DE probe (best candidate AS200187 is at 63% share with 38 upstreams).
 
@@ -33,7 +137,7 @@ providers:
 # niche/own targets that need a fixed IP.
 targets:
   - { id: google,     name: Google,    kind: hyperscaler, host: www.google.com }
-  - { id: cloudflare, name: Cloudflare, kind: hyperscaler, host: www.cloudflare.com }
+  - { id: cloudflare, name: Cloudflare, kind: hyperscaler, host: 1.1.1.1 }
   - { id: akamai,     name: Akamai,    kind: cdn,         host: www.akamai.com }
   - { id: fastly,     name: Fastly,    kind: cdn,         host: www.fastly.com }
   - { id: amazon,     name: Amazon, kind: cloud,       host: aws.amazon.com }

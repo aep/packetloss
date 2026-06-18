@@ -33,6 +33,10 @@ type Thresholds struct {
 type Provider struct {
 	ASN  uint32 `yaml:"asn"`
 	Name string `yaml:"name"`
+	// Kind classifies the network so the frontend can filter (e.g. hide content
+	// nets). One of: eyeball (access ISP), transit (carrier/backbone), content
+	// (hosting/colo/cloud/CDN/DDoS), ixp (exchange management). Optional.
+	Kind string `yaml:"kind,omitempty"`
 	// ProbeIDs, if set, overrides ASN-based probe resolution: the listed probes are
 	// used directly (across any ASN/country) and attributed to this provider. Use
 	// sparingly — e.g. a provider with no in-ASN probes but a customer that is

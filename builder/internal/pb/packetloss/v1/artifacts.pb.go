@@ -288,6 +288,7 @@ type ProviderRow struct {
 	Covered       bool                   `protobuf:"varint,5,opt,name=covered,proto3" json:"covered,omitempty"`                         // false => insufficient probe coverage
 	ProbeCount    uint32                 `protobuf:"varint,6,opt,name=probe_count,json=probeCount,proto3" json:"probe_count,omitempty"`
 	Cells         []*Cell                `protobuf:"bytes,7,rep,name=cells,proto3" json:"cells,omitempty"` // aligned to Overview.targets order
+	Kind          string                 `protobuf:"bytes,8,opt,name=kind,proto3" json:"kind,omitempty"`   // eyeball | transit | content | ixp (network class; for frontend filtering)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -369,6 +370,13 @@ func (x *ProviderRow) GetCells() []*Cell {
 		return x.Cells
 	}
 	return nil
+}
+
+func (x *ProviderRow) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
 }
 
 type Cell struct {
@@ -658,16 +666,18 @@ func (x *TargetSeries) GetMeasurementId() uint32 {
 
 // ---- <country>/targets/<id>.json : the target comparison page ----
 type TargetComparison struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CountryCode   string                 `protobuf:"bytes,1,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
-	TargetId      string                 `protobuf:"bytes,2,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
-	TargetName    string                 `protobuf:"bytes,3,opt,name=target_name,json=targetName,proto3" json:"target_name,omitempty"`
-	Kind          string                 `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
-	GeneratedAt   string                 `protobuf:"bytes,5,opt,name=generated_at,json=generatedAt,proto3" json:"generated_at,omitempty"`
-	Providers     []*ProviderSeries      `protobuf:"bytes,6,rep,name=providers,proto3" json:"providers,omitempty"`                               // overlaid lines, best first
-	MeasurementId uint32                 `protobuf:"varint,7,opt,name=measurement_id,json=measurementId,proto3" json:"measurement_id,omitempty"` // RIPE Atlas measurement for this target; link to /measurements/<id>/
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	CountryCode    string                 `protobuf:"bytes,1,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
+	TargetId       string                 `protobuf:"bytes,2,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	TargetName     string                 `protobuf:"bytes,3,opt,name=target_name,json=targetName,proto3" json:"target_name,omitempty"`
+	Kind           string                 `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
+	GeneratedAt    string                 `protobuf:"bytes,5,opt,name=generated_at,json=generatedAt,proto3" json:"generated_at,omitempty"`
+	Providers      []*ProviderSeries      `protobuf:"bytes,6,rep,name=providers,proto3" json:"providers,omitempty"`                                    // overlaid lines, best first
+	MeasurementId  uint32                 `protobuf:"varint,7,opt,name=measurement_id,json=measurementId,proto3" json:"measurement_id,omitempty"`      // RIPE Atlas measurement for this target; link to /measurements/<id>/
+	Target         string                 `protobuf:"bytes,8,opt,name=target,proto3" json:"target,omitempty"`                                          // RIPE ping target: hostname (resolved per-probe) or pinned IP
+	ResolveOnProbe bool                   `protobuf:"varint,9,opt,name=resolve_on_probe,json=resolveOnProbe,proto3" json:"resolve_on_probe,omitempty"` // true => hostname resolved at each probe (anycast/CDN nearest edge)
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *TargetComparison) Reset() {
@@ -747,6 +757,20 @@ func (x *TargetComparison) GetMeasurementId() uint32 {
 		return x.MeasurementId
 	}
 	return 0
+}
+
+func (x *TargetComparison) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *TargetComparison) GetResolveOnProbe() bool {
+	if x != nil {
+		return x.ResolveOnProbe
+	}
+	return false
 }
 
 type ProviderSeries struct {
@@ -847,7 +871,7 @@ const file_packetloss_v1_artifacts_proto_rawDesc = "" +
 	"\tTargetRef\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
-	"\x04kind\x18\x03 \x01(\tR\x04kind\"\xde\x01\n" +
+	"\x04kind\x18\x03 \x01(\tR\x04kind\"\xf2\x01\n" +
 	"\vProviderRow\x12\x10\n" +
 	"\x03asn\x18\x01 \x01(\rR\x03asn\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -856,7 +880,8 @@ const file_packetloss_v1_artifacts_proto_rawDesc = "" +
 	"\acovered\x18\x05 \x01(\bR\acovered\x12\x1f\n" +
 	"\vprobe_count\x18\x06 \x01(\rR\n" +
 	"probeCount\x12)\n" +
-	"\x05cells\x18\a \x03(\v2\x13.packetloss.v1.CellR\x05cells\"\xd9\x01\n" +
+	"\x05cells\x18\a \x03(\v2\x13.packetloss.v1.CellR\x05cells\x12\x12\n" +
+	"\x04kind\x18\b \x01(\tR\x04kind\"\xd9\x01\n" +
 	"\x04Cell\x12\x1b\n" +
 	"\ttarget_id\x18\x01 \x01(\tR\btargetId\x12-\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x15.packetloss.v1.StatusR\x06status\x12\x14\n" +
@@ -884,7 +909,7 @@ const file_packetloss_v1_artifacts_proto_rawDesc = "" +
 	"\x05score\x18\x03 \x01(\x01R\x05score\x12-\n" +
 	"\x06status\x18\x04 \x01(\x0e2\x15.packetloss.v1.StatusR\x06status\x120\n" +
 	"\x06series\x18\x05 \x03(\v2\x18.packetloss.v1.TimePointR\x06series\x12%\n" +
-	"\x0emeasurement_id\x18\a \x01(\rR\rmeasurementIdJ\x04\b\x06\x10\a\"\x8e\x02\n" +
+	"\x0emeasurement_id\x18\a \x01(\rR\rmeasurementIdJ\x04\b\x06\x10\a\"\xd0\x02\n" +
 	"\x10TargetComparison\x12!\n" +
 	"\fcountry_code\x18\x01 \x01(\tR\vcountryCode\x12\x1b\n" +
 	"\ttarget_id\x18\x02 \x01(\tR\btargetId\x12\x1f\n" +
@@ -893,7 +918,9 @@ const file_packetloss_v1_artifacts_proto_rawDesc = "" +
 	"\x04kind\x18\x04 \x01(\tR\x04kind\x12!\n" +
 	"\fgenerated_at\x18\x05 \x01(\tR\vgeneratedAt\x12;\n" +
 	"\tproviders\x18\x06 \x03(\v2\x1d.packetloss.v1.ProviderSeriesR\tproviders\x12%\n" +
-	"\x0emeasurement_id\x18\a \x01(\rR\rmeasurementId\"\xad\x01\n" +
+	"\x0emeasurement_id\x18\a \x01(\rR\rmeasurementId\x12\x16\n" +
+	"\x06target\x18\b \x01(\tR\x06target\x12(\n" +
+	"\x10resolve_on_probe\x18\t \x01(\bR\x0eresolveOnProbe\"\xad\x01\n" +
 	"\x0eProviderSeries\x12\x10\n" +
 	"\x03asn\x18\x01 \x01(\rR\x03asn\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +

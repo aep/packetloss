@@ -47,6 +47,7 @@ message ProviderRow {
   bool covered = 5;         // false => insufficient probe coverage
   uint32 probe_count = 6;
   repeated Cell cells = 7;  // aligned to Overview.targets order
+  string kind = 8;          // eyeball | transit | content | ixp (network class; for frontend filtering)
 }
 
 message Cell {
@@ -91,6 +92,8 @@ message TargetComparison {
   string generated_at = 5;
   repeated ProviderSeries providers = 6;  // overlaid lines, best first
   uint32 measurement_id = 7;              // RIPE Atlas measurement for this target; link to /measurements/<id>/
+  string target = 8;                      // RIPE ping target: hostname (resolved per-probe) or pinned IP
+  bool resolve_on_probe = 9;              // true => hostname resolved at each probe (anycast/CDN nearest edge)
 }
 
 message ProviderSeries {

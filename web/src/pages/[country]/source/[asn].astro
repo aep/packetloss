@@ -24,7 +24,7 @@ const yb = getYBounds();
 <Layout title={d.name} activeCountry={country}>
   <a class="back" href={`/${country}/`}>← {country!.toUpperCase()} overview</a>
   <div class="detail-head">
-    <h1>{d.name} <span class="asn">AS{d.asn}</span></h1>
+    <h1>{d.name} <a class="asn" href={`https://bgp.tools/as/${d.asn}`} target="_blank" rel="noopener">AS{d.asn}</a></h1>
     <div class={`score-badge ${statusClass(d.status)}`}>
       {d.covered ? `${d.score.toFixed(1)} / 10` : 'no coverage'}
     </div>

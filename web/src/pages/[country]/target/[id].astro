@@ -25,11 +25,22 @@ const yb = getYBounds();
   <a class="back" href={`/${country}/`}>← {country!.toUpperCase()} overview</a>
   <h1>Reaching {tc.targetName}</h1>
   <p class="sub">Best vs. worst provider in {country!.toUpperCase()} · generated {tc.generatedAt}</p>
+  {tc.target && (
+    <p class="method">
+      ICMP echo (ping) to <code>{tc.target}</code>
+      {tc.resolveOnProbe
+        ? <> · resolved per-probe, so each probe measures its nearest {tc.targetName} edge</>
+        : <> · fixed address</>}
+      {tc.measurementId > 0 && (
+        <> · <a href={`https://atlas.ripe.net/measurements/${tc.measurementId}/`} target="_blank" rel="noopener noreferrer">RIPE Atlas #{tc.measurementId}</a></>
+      )}
+    </p>
+  )}
   <div class="cards">
     {tc.providers.map((p) => (
       <section class="card">
         <header>
-          <h3><a href={`/${country}/provider/${p.asn}/`}>{p.name}</a></h3>
+          <h3><a href={`/${country}/source/${p.asn}/`}>{p.name}</a></h3>
           <span class={`pill ${statusClass(p.status)}`}>{p.score.toFixed(1)}</span>
         </header>
         <Sparkline series={p.series} maxRtt={yb.rtt} maxLoss={yb.loss} />

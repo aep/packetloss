@@ -12,13 +12,49 @@ const { overview, country } = Astro.props;
 // A provider has a real score only if covered AND at least one cell was scored
 // (status set). Otherwise we show "—" rather than a misleading 0.0.
 const hasScore = (status: Status, covered: boolean) => covered && status !== Status.UNSPECIFIED;
+
+// Kind filter: one pill per network class present. Transit is first and the only
+// one on by default; the others (incl. content, which dominates the cone ranking
+// but isn't what most people want) are opt-in. Kinds render in a stable order;
+// unknown values sort last. The "All" pill turns every kind on at once.
+const KIND_LABELS: Record<string, string> = {
+  transit: 'Transit',
+  eyeball: 'Eyeball ISPs',
+  ixp: 'IXP',
+  content: 'Content',
+};
+const KIND_ORDER = ['transit', 'eyeball', 'ixp', 'content'];
+const DEFAULT_KINDS = new Set(['transit']);
+const kindLabel = (k: string) => KIND_LABELS[k] ?? (k.charAt(0).toUpperCase() + k.slice(1));
+const providerKind = (k: string) => k || 'other';
+const kindCounts = overview.providers.reduce<Record<string, number>>((m, p) => {
+  const k = providerKind(p.kind);
+  m[k] = (m[k] ?? 0) + 1;
+  return m;
+}, {});
+const kinds = Object.keys(kindCounts).sort((a, b) => {
+  const ia = KIND_ORDER.indexOf(a), ib = KIND_ORDER.indexOf(b);
+  return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+});
 ---
+
+<div class="grid-controls">
+  <input class="grid-search" type="search" placeholder="Search provider or ASN…" autocomplete="off" />
+  <div class="grid-filters" role="group" aria-label="Filter by network type">
+    <button type="button" class="kind-pill" data-all aria-pressed="false">All</button>
+    {kinds.map((k) => (
+      <button type="button" class="kind-pill" data-kind={k} aria-pressed={DEFAULT_KINDS.has(k) ? 'true' : 'false'}>
+        {kindLabel(k)}<span class="kind-count">{kindCounts[k]}</span>
+      </button>
+    ))}
+  </div>
+</div>
 
 <table class="grid">
   <thead>
     <tr>
-      <th class="corner">Provider</th>
       <th class="score-col">Score</th>
+      <th class="corner">Provider</th>
       {overview.targets.map((t) => (
         <th><a href={`/${country}/target/${t.id}/`}>{t.name}</a></th>
       ))}
@@ -26,30 +62,68 @@ const hasScore = (status: Status, covered: boolean) => covered && status !== Sta
   </thead>
   <tbody>
     {overview.providers.map((p) => (
-      <tr>
-        <th class="provider">
-          <a href={`/${country}/provider/${p.asn}/`}>{p.name}</a>
-          <span class="asn">AS{p.asn}</span>
-        </th>
+      <tr data-search={`${p.name} AS${p.asn}`.toLowerCase()} data-kind={providerKind(p.kind)}>
         <td class="score">
-          <span class="badge">{hasScore(p.status, p.covered) ? p.score.toFixed(1) : '—'}</span>
+          <span class={`badge ${statusClass(p.status)}`}>{hasScore(p.status, p.covered) ? p.score.toFixed(1) : '—'}</span>
         </td>
+        <th class="provider">
+          <a href={`/${country}/source/${p.asn}/`}>{p.name}</a>
+          <a class="asn" href={`https://bgp.tools/as/${p.asn}`} target="_blank" rel="noopener">AS{p.asn}</a>
+        </th>
         {p.cells.map((c) => (
           <td
             class={`cell ${statusClass(c.status)}`}
             title={c.hasData ? `${c.rttP50Ms.toFixed(1)} ms · ${c.lossPct.toFixed(1)}% loss · ${c.jitterMs.toFixed(1)} ms jitter` : statusLabel(c.status)}
           >
-            {c.hasData && (
-              <>
-                <span class="cell-rtt">{c.rttP50Ms.toFixed(0)}ms</span>
+            {c.hasData ? (
+              <span class="cell-val">
                 {c.lossPct >= 1
-                  ? <span class="cell-loss"> · {c.lossPct.toFixed(0)}%</span>
-                  : c.jitterMs >= 5 && <span class="cell-jitter"> · ±{c.jitterMs.toFixed(0)}ms</span>}
-              </>
-            )}
+                  ? `${c.lossPct.toFixed(0)}%`
+                  : c.jitterMs >= 5
+                    ? `±${c.jitterMs.toFixed(0)}ms`
+                    : `${c.rttP50Ms.toFixed(0)}ms`}
+              </span>
+            ) : <span class="cell-dash">—</span>}
           </td>
         ))}
       </tr>
     ))}
   </tbody>
 </table>
+
+<p class="grid-empty" hidden>No providers match your search.</p>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>('.grid-search');
+  const rows = Array.from(document.querySelectorAll<HTMLElement>('.grid tbody tr'));
+  const empty = document.querySelector<HTMLElement>('.grid-empty');
+  const pills = Array.from(document.querySelectorAll<HTMLButtonElement>('.kind-pill[data-kind]'));
+  const allPill = document.querySelector<HTMLButtonElement>('.kind-pill[data-all]');
+
+  const isOn = (el: Element | null) => el?.getAttribute('aria-pressed') === 'true';
+  const setOn = (el: Element | null, on: boolean) => el?.setAttribute('aria-pressed', on ? 'true' : 'false');
+
+  function apply() {
+    const q = input?.value.trim().toLowerCase() ?? '';
+    const active = new Set(pills.filter(isOn).map((b) => b.dataset.kind));
+    setOn(allPill, active.size === pills.length);
+    let visible = 0;
+    for (const row of rows) {
+      const matchSearch = !q || (row.dataset.search ?? '').includes(q);
+      const matchKind = active.has(row.dataset.kind ?? 'other');
+      const match = matchSearch && matchKind;
+      row.hidden = !match;
+      if (match) visible++;
+    }
+    if (empty) empty.hidden = visible > 0;
+  }
+
+  const selectAll = () => { for (const p of pills) setOn(p, true); };
+
+  for (const pill of pills) pill.addEventListener('click', () => { setOn(pill, !isOn(pill)); apply(); });
+  allPill?.addEventListener('click', () => { selectAll(); apply(); });
+  // Typing a query snaps the filter back to All (so the whole list is searched and
+  // it's obvious nothing is hidden); the user can still narrow with the pills after.
+  input?.addEventListener('input', () => { selectAll(); apply(); });
+  apply(); // apply the default selection (Transit only) on first paint
+</script>
