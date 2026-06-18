@@ -11,6 +11,12 @@ import Layout from '../components/Layout.astro';
       Every provider gets one absolute score, <strong>0–10</strong> (10 ≈ perfect). It
       doesn't depend on the rest of the table, so a 7 means the same thing everywhere.
     </p>
+    <p>
+      <strong>Important:</strong> the score is the view from the RIPE Atlas probe(s) that happen to sit
+      inside that network — often just <strong>one</strong> probe. It measures that vantage point's path
+      to each destination, not a provider-wide average. A small or hobbyist ASN with one well-connected
+      probe can therefore outscore a large carrier. The probe count is shown next to every ASN.
+    </p>
     <ul>
       <li><strong>Measure</strong> — RIPE Atlas probes in (or single-homed behind) the provider ping major clouds + top consumer networks hourly, over a rolling 7&nbsp;days.</li>
       <li><strong>Cost</strong> — <code>latency + 10×loss% + 3×jitter</code> (ms). Loss and jitter weigh heavier because they hurt more than raw speed.</li>
@@ -25,7 +31,8 @@ import Layout from '../components/Layout.astro';
     <h2>Where's the data from?</h2>
     <p>
       Public <a href="https://atlas.ripe.net/" target="_blank" rel="noopener">RIPE Atlas</a>
-      measurements. Each provider page links its raw measurement.
+      measurements. Each provider page links both its raw measurements and the exact
+      probe(s) inside the network that the score is based on.
     </p>
 
     <h2>Which sources are listed?</h2>

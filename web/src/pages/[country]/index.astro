@@ -16,6 +16,6 @@ const ov = getOverview(country!);
   <p class="sub">Transit / ISP reachability to top destinations in the last 7 days · generated {ov.generatedAt}</p>
   <Grid overview={ov} country={country!} />
   <p slot="footer">
-    Absolute 0–10 scores from RIPE Atlas measurements. <a href="/faq/">How we rank providers →</a>
+    Absolute 0–10 scores from a RIPE Atlas probe <em>inside</em> each source network. <a href="/faq/">How we rank providers →</a>
   </p>
 </Layout>

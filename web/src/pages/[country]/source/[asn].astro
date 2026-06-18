@@ -19,6 +19,8 @@ export function getStaticPaths() {
 const { country, asn } = Astro.params;
 const d = getProviderDetail(country!, asn!);
 const yb = getYBounds();
+
+const MAX_PROBE_LINKS = 12;
 ---
 
 <Layout title={d.name} activeCountry={country}>
@@ -29,7 +31,20 @@ const yb = getYBounds();
       {d.covered ? `${d.score.toFixed(1)} / 10` : 'no coverage'}
     </div>
   </div>
-  {!d.covered && (
+  {d.covered ? (
+    <p class="sub">
+      Measured via {d.probeCount} RIPE Atlas {d.probeCount === 1 ? 'probe' : 'probes'} inside this
+      network {d.probeIds.length > 0 && (
+        <>
+          {' : '}
+          {d.probeIds.slice(0, MAX_PROBE_LINKS).map((id, i) => (
+            <>{i > 0 && ', '}<a class="probe-link" href={`https://atlas.ripe.net/probes/${id}/`} target="_blank" rel="noopener noreferrer">#{id}</a></>
+          ))}
+          {d.probeIds.length > MAX_PROBE_LINKS && ` +${d.probeIds.length - MAX_PROBE_LINKS} more`}
+        </>
+      )}
+    </p>
+  ) : (
     <p class="notice">Insufficient RIPE Atlas probe coverage ({d.probeCount} probes) — not scored.</p>
   )}
   <div class="cards">

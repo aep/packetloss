@@ -71,6 +71,9 @@ message ProviderDetail {
   uint32 probe_count = 7;
   string generated_at = 8;
   repeated TargetSeries targets = 9;
+  // RIPE Atlas probe IDs (inside this ASN) whose results fed the score; link to
+  // /probes/<id>/. Distinct + sorted. Empty when the provider isn't covered.
+  repeated uint32 probe_ids = 10;
 }
 
 message TargetSeries {

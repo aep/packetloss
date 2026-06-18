@@ -48,7 +48,7 @@ func WriteCountry(jsonDir string, rep score.CountryReport, msmIDs map[string]int
 		d := &pb.ProviderDetail{
 			CountryCode: rep.Code, Asn: p.ASN, Name: p.Name, Score: p.Score,
 			Status: status(p.Status), Covered: p.Covered, ProbeCount: uint32(p.ProbeCount),
-			GeneratedAt: gen,
+			GeneratedAt: gen, ProbeIds: p.ProbeIDs,
 		}
 		for _, t := range rep.Targets {
 			ts := &pb.TargetSeries{TargetId: t.ID, TargetName: t.Name, MeasurementId: uint32(msmIDs[t.ID])}

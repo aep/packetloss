@@ -60,6 +60,7 @@ type ProviderReport struct {
 	Status     Status
 	Covered    bool
 	ProbeCount int
+	ProbeIDs   []uint32 // distinct RIPE probe IDs (inside this ASN) that returned data, sorted
 	Cells      []Cell
 	Series     map[string][]TimePoint
 }
@@ -95,9 +96,14 @@ func Compute(c config.Country, th config.Thresholds, probeCounts map[uint32]int,
 	}
 
 	byPT := map[ptKey][]Result{}
+	probesByASN := map[uint32]map[uint32]bool{}
 	for _, r := range results {
 		k := ptKey{r.ProviderASN, r.TargetID}
 		byPT[k] = append(byPT[k], r)
+		if probesByASN[r.ProviderASN] == nil {
+			probesByASN[r.ProviderASN] = map[uint32]bool{}
+		}
+		probesByASN[r.ProviderASN][r.ProbeID] = true
 	}
 
 	type agg struct {
@@ -133,6 +139,7 @@ func Compute(c config.Country, th config.Thresholds, probeCounts map[uint32]int,
 			Name:       p.Name,
 			Kind:       p.Kind,
 			ProbeCount: probeCounts[p.ASN],
+			ProbeIDs:   sortedProbeIDs(probesByASN[p.ASN]),
 			Covered:    probeCounts[p.ASN] >= th.MinProbes,
 			Series:     map[string][]TimePoint{},
 		}
@@ -301,3 +308,17 @@ func series(rs []Result) []TimePoint {
 }
 
 func round1(f float64) float64 { return float64(int(f*10+0.5)) / 10 }
+
+// sortedProbeIDs flattens a probe-ID set into an ascending slice (nil stays nil so
+// uncovered providers export no probe links).
+func sortedProbeIDs(set map[uint32]bool) []uint32 {
+	if len(set) == 0 {
+		return nil
+	}
+	ids := make([]uint32, 0, len(set))
+	for id := range set {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+	return ids
+}

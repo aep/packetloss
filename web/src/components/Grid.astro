@@ -50,6 +50,7 @@ const kinds = Object.keys(kindCounts).sort((a, b) => {
   </div>
 </div>
 
+<div class="grid-wrap">
 <table class="grid">
   <thead>
     <tr>
@@ -68,7 +69,10 @@ const kinds = Object.keys(kindCounts).sort((a, b) => {
         </td>
         <th class="provider">
           <a href={`/${country}/source/${p.asn}/`}>{p.name}</a>
-          <a class="asn" href={`https://bgp.tools/as/${p.asn}`} target="_blank" rel="noopener">AS{p.asn}</a>
+          <span class="asn-line">
+            <a class="asn" href={`https://bgp.tools/as/${p.asn}`} target="_blank" rel="noopener">AS{p.asn}</a>
+            <span class="probes" title="Score is the view from this many RIPE Atlas probes inside the network">{p.probeCount} {p.probeCount === 1 ? 'probe' : 'probes'}</span>
+          </span>
         </th>
         {p.cells.map((c) => (
           <td
@@ -90,6 +94,7 @@ const kinds = Object.keys(kindCounts).sort((a, b) => {
     ))}
   </tbody>
 </table>
+</div>
 
 <p class="grid-empty" hidden>No providers match your search.</p>
 

@@ -473,16 +473,19 @@ func (x *Cell) GetJitterMs() float64 {
 
 // ---- <country>/providers/<asn>.json : the provider detail page ----
 type ProviderDetail struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CountryCode   string                 `protobuf:"bytes,1,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
-	Asn           uint32                 `protobuf:"varint,2,opt,name=asn,proto3" json:"asn,omitempty"`
-	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Score         float64                `protobuf:"fixed64,4,opt,name=score,proto3" json:"score,omitempty"`
-	Status        Status                 `protobuf:"varint,5,opt,name=status,proto3,enum=packetloss.v1.Status" json:"status,omitempty"`
-	Covered       bool                   `protobuf:"varint,6,opt,name=covered,proto3" json:"covered,omitempty"`
-	ProbeCount    uint32                 `protobuf:"varint,7,opt,name=probe_count,json=probeCount,proto3" json:"probe_count,omitempty"`
-	GeneratedAt   string                 `protobuf:"bytes,8,opt,name=generated_at,json=generatedAt,proto3" json:"generated_at,omitempty"`
-	Targets       []*TargetSeries        `protobuf:"bytes,9,rep,name=targets,proto3" json:"targets,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	CountryCode string                 `protobuf:"bytes,1,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
+	Asn         uint32                 `protobuf:"varint,2,opt,name=asn,proto3" json:"asn,omitempty"`
+	Name        string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Score       float64                `protobuf:"fixed64,4,opt,name=score,proto3" json:"score,omitempty"`
+	Status      Status                 `protobuf:"varint,5,opt,name=status,proto3,enum=packetloss.v1.Status" json:"status,omitempty"`
+	Covered     bool                   `protobuf:"varint,6,opt,name=covered,proto3" json:"covered,omitempty"`
+	ProbeCount  uint32                 `protobuf:"varint,7,opt,name=probe_count,json=probeCount,proto3" json:"probe_count,omitempty"`
+	GeneratedAt string                 `protobuf:"bytes,8,opt,name=generated_at,json=generatedAt,proto3" json:"generated_at,omitempty"`
+	Targets     []*TargetSeries        `protobuf:"bytes,9,rep,name=targets,proto3" json:"targets,omitempty"`
+	// RIPE Atlas probe IDs (inside this ASN) whose results fed the score; link to
+	// /probes/<id>/. Distinct + sorted. Empty when the provider isn't covered.
+	ProbeIds      []uint32 `protobuf:"varint,10,rep,packed,name=probe_ids,json=probeIds,proto3" json:"probe_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -576,6 +579,13 @@ func (x *ProviderDetail) GetGeneratedAt() string {
 func (x *ProviderDetail) GetTargets() []*TargetSeries {
 	if x != nil {
 		return x.Targets
+	}
+	return nil
+}
+
+func (x *ProviderDetail) GetProbeIds() []uint32 {
+	if x != nil {
+		return x.ProbeIds
 	}
 	return nil
 }
@@ -890,7 +900,7 @@ const file_packetloss_v1_artifacts_proto_rawDesc = "" +
 	"rtt_p50_ms\x18\x04 \x01(\x01R\brttP50Ms\x12\x19\n" +
 	"\bloss_pct\x18\x05 \x01(\x01R\alossPct\x12\x19\n" +
 	"\bhas_data\x18\x06 \x01(\bR\ahasData\x12\x1b\n" +
-	"\tjitter_ms\x18\a \x01(\x01R\bjitterMs\"\xb3\x02\n" +
+	"\tjitter_ms\x18\a \x01(\x01R\bjitterMs\"\xd0\x02\n" +
 	"\x0eProviderDetail\x12!\n" +
 	"\fcountry_code\x18\x01 \x01(\tR\vcountryCode\x12\x10\n" +
 	"\x03asn\x18\x02 \x01(\rR\x03asn\x12\x12\n" +
@@ -901,7 +911,9 @@ const file_packetloss_v1_artifacts_proto_rawDesc = "" +
 	"\vprobe_count\x18\a \x01(\rR\n" +
 	"probeCount\x12!\n" +
 	"\fgenerated_at\x18\b \x01(\tR\vgeneratedAt\x125\n" +
-	"\atargets\x18\t \x03(\v2\x1b.packetloss.v1.TargetSeriesR\atargets\"\xf0\x01\n" +
+	"\atargets\x18\t \x03(\v2\x1b.packetloss.v1.TargetSeriesR\atargets\x12\x1b\n" +
+	"\tprobe_ids\x18\n" +
+	" \x03(\rR\bprobeIds\"\xf0\x01\n" +
 	"\fTargetSeries\x12\x1b\n" +
 	"\ttarget_id\x18\x01 \x01(\tR\btargetId\x12\x1f\n" +
 	"\vtarget_name\x18\x02 \x01(\tR\n" +

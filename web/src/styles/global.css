@@ -75,6 +75,7 @@ h1 { font-size: 1.9rem; margin: 0 0 0.3rem; letter-spacing: -0.5px; }
 .kind-pill[aria-pressed="true"] .kind-count { color: color-mix(in srgb, var(--bg) 70%, transparent); }
 .grid-empty { color: var(--muted); padding: 1.2rem 0; }
 
+.grid-wrap { /* scroll only kicks in on narrow screens — see media query below */ }
 .grid { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
 .grid th, .grid td { padding: 0.95rem 0.9rem; text-align: center; }
 .grid tbody th, .grid tbody td { border-bottom: 1px solid var(--line); }
@@ -83,8 +84,10 @@ h1 { font-size: 1.9rem; margin: 0 0 0.3rem; letter-spacing: -0.5px; }
 .grid .score, .grid .score-col { padding: 0.95rem 0.35rem; width: 1px; white-space: nowrap; }
 .grid th.provider { white-space: nowrap; }
 .grid th.provider a { color: var(--fg); font-weight: 600; }
-.grid th.provider a.asn { display: block; font: 400 0.7rem var(--mono); color: var(--muted); }
+.grid th.provider .asn-line { display: flex; align-items: baseline; gap: 0.5rem; }
+.grid th.provider a.asn { font: 400 0.7rem var(--mono); color: var(--muted); }
 .grid th.provider a.asn:hover { color: var(--accent); }
+.grid th.provider .probes { font: 400 0.7rem var(--mono); color: var(--muted); opacity: 0.75; }
 .cell { white-space: nowrap; }
 .cell-val {
   display: inline-block;
@@ -126,6 +129,8 @@ h1 { font-size: 1.9rem; margin: 0 0 0.3rem; letter-spacing: -0.5px; }
   border-radius: 10px;
 }
 .notice { background: var(--panel); border: 1px solid var(--line); padding: 0.8rem 1rem; border-radius: 8px; color: var(--muted); }
+.probe-link { font-family: var(--mono); color: var(--muted); text-decoration: none; border-bottom: 1px dotted var(--line); }
+.probe-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
 
 .method {
   margin: -0.8rem 0 1.8rem; color: var(--muted); font-size: 0.9rem;
@@ -174,3 +179,33 @@ h1 { font-size: 1.9rem; margin: 0 0 0.3rem; letter-spacing: -0.5px; }
 .prose code { font: 0.85em var(--mono); background: var(--panel); padding: 0.1rem 0.35rem; border-radius: 4px; }
 .prose .lead { color: var(--muted); font-size: 1.05rem; margin-bottom: 1.6rem; }
 .prose .legend { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; font: 700 0.78rem var(--mono); }
+
+/* ---- tablet: matrix can exceed the viewport, so let the table scroll on its
+   own instead of pushing the whole page. Desktop (>1023px) is untouched. ---- */
+@media (max-width: 1023px) {
+  .grid-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+/* ---- mobile ---- */
+@media (max-width: 640px) {
+  .site-header { flex-wrap: wrap; gap: 0.4rem 0.6rem; padding: 0.8rem 1rem; }
+  .brand { font-size: 1.25rem; }
+  .countries { display: flex; flex-wrap: wrap; gap: 0.15rem; }
+  .countries a { padding: 0.35rem 0.5rem; }
+
+  main { padding: 1.25rem 1rem 2.5rem; }
+  h1 { font-size: 1.5rem; }
+  .sub { font-size: 0.9rem; margin-bottom: 1.4rem; }
+
+  /* The per-target matrix is unusable on a phone: collapse to a ranked list of
+     Score + Provider. The score summarizes every target; tapping a provider
+     opens the full per-target breakdown. */
+  .grid thead th:not(.score-col):not(.corner),
+  .grid tbody td.cell { display: none; }
+  .grid th, .grid td { padding: 0.8rem 0.6rem; }
+  .grid .score, .grid .score-col { padding: 0.8rem 0.35rem; }
+  .grid th.provider { white-space: normal; }
+
+  .cards { grid-template-columns: 1fr; }
+  .detail-head { flex-wrap: wrap; gap: 0.5rem; }
+}
